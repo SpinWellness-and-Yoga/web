@@ -1,3 +1,5 @@
+import { Resend } from 'resend';
+
 function getEnvVar(key: string, env?: any): string | undefined {
   // with nodejs_compat, process.env should work in cloudflare workers
   // try process.env first (works in both local and cloudflare with nodejs_compat)
@@ -5,7 +7,7 @@ function getEnvVar(key: string, env?: any): string | undefined {
     return process.env[key];
   }
   
-  // try env parameter (from request context)
+  // try env parameter (from request context - cloudflare workers standard)
   if (env?.[key]) return env[key];
   if (env?.env?.[key]) return env.env[key];
   if (env?.vars?.[key]) return env.vars[key];
@@ -55,7 +57,7 @@ export async function sendWaitlistNotification(entry: {
   `;
 
   const emailPayload = {
-    from: 'Spinwellness Waitlist <noreply@spinwellness.org>',
+    from: 'Spinwellness Waitlist <admin@spinwellness.org>',
     to: [adminEmail],
     subject: `New Waitlist Entry: ${entry.full_name} from ${entry.company}`,
     html: emailBody,
@@ -64,29 +66,14 @@ export async function sendWaitlistNotification(entry: {
   try {
     console.log('[sendWaitlistNotification] Attempting to send email to:', adminEmail);
     console.log('[sendWaitlistNotification] API key present:', !!resendApiKey);
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${resendApiKey}`,
-      },
-      body: JSON.stringify(emailPayload),
-    });
+    
+    const resend = new Resend(resendApiKey);
+    const { data, error } = await resend.emails.send(emailPayload);
 
-    const responseText = await response.text();
-    console.log('[sendWaitlistNotification] Resend response status:', response.status);
-    console.log('[sendWaitlistNotification] Resend response body:', responseText);
-
-    if (!response.ok) {
-      let errorData;
-      try {
-        errorData = JSON.parse(responseText);
-      } catch {
-        errorData = { raw: responseText };
-      }
-      console.error('[sendWaitlistNotification] Resend API error:', JSON.stringify(errorData, null, 2));
+    if (error) {
+      console.error('[sendWaitlistNotification] Resend API error:', JSON.stringify(error, null, 2));
     } else {
-      console.log('[sendWaitlistNotification] Email sent successfully');
+      console.log('[sendWaitlistNotification] Email sent successfully:', JSON.stringify(data, null, 2));
     }
   } catch (error) {
     console.error('[sendWaitlistNotification] Failed to send email:', error);
@@ -163,29 +150,14 @@ export async function sendWaitlistConfirmation(entry: {
 
   try {
     console.log('[sendWaitlistConfirmation] Attempting to send email to:', entry.email);
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${resendApiKey}`,
-      },
-      body: JSON.stringify(emailPayload),
-    });
+    
+    const resend = new Resend(resendApiKey);
+    const { data, error } = await resend.emails.send(emailPayload);
 
-    const responseText = await response.text();
-    console.log('[sendWaitlistConfirmation] Resend response status:', response.status);
-    console.log('[sendWaitlistConfirmation] Resend response body:', responseText);
-
-    if (!response.ok) {
-      let errorData;
-      try {
-        errorData = JSON.parse(responseText);
-      } catch {
-        errorData = { raw: responseText };
-      }
-      console.error('[sendWaitlistConfirmation] Resend API error:', JSON.stringify(errorData, null, 2));
+    if (error) {
+      console.error('[sendWaitlistConfirmation] Resend API error:', JSON.stringify(error, null, 2));
     } else {
-      console.log('[sendWaitlistConfirmation] Email sent successfully');
+      console.log('[sendWaitlistConfirmation] Email sent successfully:', JSON.stringify(data, null, 2));
     }
   } catch (error) {
     console.error('[sendWaitlistConfirmation] Failed to send email:', error);
@@ -228,29 +200,14 @@ export async function sendContactNotification(entry: {
 
   try {
     console.log('[sendContactNotification] Attempting to send email to:', adminEmail);
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${resendApiKey}`,
-      },
-      body: JSON.stringify(emailPayload),
-    });
+    
+    const resend = new Resend(resendApiKey);
+    const { data, error } = await resend.emails.send(emailPayload);
 
-    const responseText = await response.text();
-    console.log('[sendContactNotification] Resend response status:', response.status);
-    console.log('[sendContactNotification] Resend response body:', responseText);
-
-    if (!response.ok) {
-      let errorData;
-      try {
-        errorData = JSON.parse(responseText);
-      } catch {
-        errorData = { raw: responseText };
-      }
-      console.error('[sendContactNotification] Resend API error:', JSON.stringify(errorData, null, 2));
+    if (error) {
+      console.error('[sendContactNotification] Resend API error:', JSON.stringify(error, null, 2));
     } else {
-      console.log('[sendContactNotification] Email sent successfully');
+      console.log('[sendContactNotification] Email sent successfully:', JSON.stringify(data, null, 2));
     }
   } catch (error) {
     console.error('[sendContactNotification] Failed to send email:', error);
@@ -315,29 +272,14 @@ export async function sendContactConfirmation(entry: {
 
   try {
     console.log('[sendContactConfirmation] Attempting to send email to:', entry.email);
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${resendApiKey}`,
-      },
-      body: JSON.stringify(emailPayload),
-    });
+    
+    const resend = new Resend(resendApiKey);
+    const { data, error } = await resend.emails.send(emailPayload);
 
-    const responseText = await response.text();
-    console.log('[sendContactConfirmation] Resend response status:', response.status);
-    console.log('[sendContactConfirmation] Resend response body:', responseText);
-
-    if (!response.ok) {
-      let errorData;
-      try {
-        errorData = JSON.parse(responseText);
-      } catch {
-        errorData = { raw: responseText };
-      }
-      console.error('[sendContactConfirmation] Resend API error:', JSON.stringify(errorData, null, 2));
+    if (error) {
+      console.error('[sendContactConfirmation] Resend API error:', JSON.stringify(error, null, 2));
     } else {
-      console.log('[sendContactConfirmation] Email sent successfully');
+      console.log('[sendContactConfirmation] Email sent successfully:', JSON.stringify(data, null, 2));
     }
   } catch (error) {
     console.error('[sendContactConfirmation] Failed to send email:', error);
