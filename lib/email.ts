@@ -1,28 +1,18 @@
 import {Resend} from 'resend';
 
 function getEnvVar(key: string, env?: any): string | undefined {
-  // with nodejs_compat, process.env should work in cloudflare workers
-  // try process.env first (works in both local and cloudflare with nodejs_compat)
   if (typeof process !== 'undefined' && process.env?.[key]) {
     return process.env[key];
   }
   
-  // try env parameter (from request context - cloudflare workers standard)
   if (env?.[key]) return env[key];
   if (env?.env?.[key]) return env.env[key];
   if (env?.vars?.[key]) return env.vars[key];
   
-  // cloudflare workers global scope - dashboard vars might be here
   if (typeof globalThis !== 'undefined') {
     const g = globalThis as any;
-    
-    // check env object
     if (g.env?.[key]) return g.env[key];
-    
-    // direct global access
     if (g[key]) return g[key];
-    
-    // alternative locations
     if (g.__env__?.[key]) return g.__env__[key];
     if (g.__CLOUDFLARE_ENV__?.[key]) return g.__CLOUDFLARE_ENV__[key];
   }
@@ -41,7 +31,6 @@ export async function sendWaitlistNotification(entry: {
   const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellness.org';
 
   if (!resendApiKey) {
-    console.error('[sendWaitlistNotification] RESEND_API_KEY not found');
     return;
   }
 
@@ -64,29 +53,14 @@ export async function sendWaitlistNotification(entry: {
   };
 
   try {
-    console.log('[sendWaitlistNotification] Attempting to send email to:', adminEmail);
-    console.log('[sendWaitlistNotification] API key present:', !!resendApiKey);
-    console.log('[sendWaitlistNotification] Creating Resend client...');
-    
     const resend = new Resend(resendApiKey);
-    console.log('[sendWaitlistNotification] Resend client created, calling send...');
-    
     const result = await resend.emails.send(emailPayload);
-    console.log('[sendWaitlistNotification] Resend call completed');
-    console.log('[sendWaitlistNotification] Result:', JSON.stringify({ hasData: !!result.data, hasError: !!result.error }, null, 2));
 
     if (result.error) {
-      console.error('[sendWaitlistNotification] Resend API error:', JSON.stringify(result.error, null, 2));
-    } else {
-      console.log('[sendWaitlistNotification] Email sent successfully:', JSON.stringify(result.data, null, 2));
+      console.error('Resend API error:', result.error);
     }
   } catch (error) {
-    console.error('[sendWaitlistNotification] Exception caught:', error);
-    console.error('[sendWaitlistNotification] Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : typeof error,
-    });
+    console.error('Failed to send waitlist notification:', error);
   }
 }
 
@@ -98,7 +72,6 @@ export async function sendWaitlistConfirmation(entry: {
   const resendApiKey = getEnvVar('RESEND_API_KEY', env);
 
   if (!resendApiKey) {
-    console.error('[sendWaitlistConfirmation] RESEND_API_KEY not found');
     return;
   }
 
@@ -155,28 +128,14 @@ export async function sendWaitlistConfirmation(entry: {
   };
 
   try {
-    console.log('[sendWaitlistConfirmation] Attempting to send email to:', entry.email);
-    console.log('[sendWaitlistConfirmation] Creating Resend client...');
-    
     const resend = new Resend(resendApiKey);
-    console.log('[sendWaitlistConfirmation] Resend client created, calling send...');
-    
     const result = await resend.emails.send(emailPayload);
-    console.log('[sendWaitlistConfirmation] Resend call completed');
-    console.log('[sendWaitlistConfirmation] Result:', JSON.stringify({ hasData: !!result.data, hasError: !!result.error }, null, 2));
 
     if (result.error) {
-      console.error('[sendWaitlistConfirmation] Resend API error:', JSON.stringify(result.error, null, 2));
-    } else {
-      console.log('[sendWaitlistConfirmation] Email sent successfully:', JSON.stringify(result.data, null, 2));
+      console.error('Resend API error:', result.error);
     }
   } catch (error) {
-    console.error('[sendWaitlistConfirmation] Exception caught:', error);
-    console.error('[sendWaitlistConfirmation] Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : typeof error,
-    });
+    console.error('Failed to send waitlist confirmation:', error);
   }
 }
 
@@ -189,7 +148,6 @@ export async function sendContactNotification(entry: {
   const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellness.org';
 
   if (!resendApiKey) {
-    console.error('[sendContactNotification] RESEND_API_KEY not found');
     return;
   }
 
@@ -211,28 +169,14 @@ export async function sendContactNotification(entry: {
   };
 
   try {
-    console.log('[sendContactNotification] Attempting to send email to:', adminEmail);
-    console.log('[sendContactNotification] Creating Resend client...');
-    
     const resend = new Resend(resendApiKey);
-    console.log('[sendContactNotification] Resend client created, calling send...');
-    
     const result = await resend.emails.send(emailPayload);
-    console.log('[sendContactNotification] Resend call completed');
-    console.log('[sendContactNotification] Result:', JSON.stringify({ hasData: !!result.data, hasError: !!result.error }, null, 2));
 
     if (result.error) {
-      console.error('[sendContactNotification] Resend API error:', JSON.stringify(result.error, null, 2));
-    } else {
-      console.log('[sendContactNotification] Email sent successfully:', JSON.stringify(result.data, null, 2));
+      console.error('Resend API error:', result.error);
     }
   } catch (error) {
-    console.error('[sendContactNotification] Exception caught:', error);
-    console.error('[sendContactNotification] Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : typeof error,
-    });
+    console.error('Failed to send contact notification:', error);
   }
 }
 
@@ -243,7 +187,6 @@ export async function sendContactConfirmation(entry: {
   const resendApiKey = getEnvVar('RESEND_API_KEY', env);
 
   if (!resendApiKey) {
-    console.error('[sendContactConfirmation] RESEND_API_KEY not found');
     return;
   }
 
@@ -289,28 +232,14 @@ export async function sendContactConfirmation(entry: {
   };
 
   try {
-    console.log('[sendContactConfirmation] Attempting to send email to:', entry.email);
-    console.log('[sendContactConfirmation] Creating Resend client...');
-    
     const resend = new Resend(resendApiKey);
-    console.log('[sendContactConfirmation] Resend client created, calling send...');
-    
     const result = await resend.emails.send(emailPayload);
-    console.log('[sendContactConfirmation] Resend call completed');
-    console.log('[sendContactConfirmation] Result:', JSON.stringify({ hasData: !!result.data, hasError: !!result.error }, null, 2));
 
     if (result.error) {
-      console.error('[sendContactConfirmation] Resend API error:', JSON.stringify(result.error, null, 2));
-    } else {
-      console.log('[sendContactConfirmation] Email sent successfully:', JSON.stringify(result.data, null, 2));
+      console.error('Resend API error:', result.error);
     }
   } catch (error) {
-    console.error('[sendContactConfirmation] Exception caught:', error);
-    console.error('[sendContactConfirmation] Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : typeof error,
-    });
+    console.error('Failed to send contact confirmation:', error);
   }
 }
 
