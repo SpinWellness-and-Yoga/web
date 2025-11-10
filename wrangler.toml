@@ -6,3 +6,8 @@ compatibility_flags = ["nodejs_compat"]
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DATABASE"
+database_name = "spinwellness_web"
+database_id = "812db10b-8e64-4025-8052-1d3d6e0d8c79"

@@ -39,3 +39,5 @@ cloudflare-env.d.ts
 *.tsbuildinfo
 next-env.d.ts
 .open-next/_worker.js
+
+wrangler.toml

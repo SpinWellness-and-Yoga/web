@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:cf": "wrangler dev --port 8788 --compatibility-date 2025-03-25 --compatibility-flags nodejs_compat",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

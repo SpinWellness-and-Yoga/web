@@ -1,16 +1,21 @@
 import { NextResponse } from "next/server";
+import { getD1Database } from "@/lib/d1";
+
+// cloudflare workers runtime - env is available globally
+declare global {
+  var DATABASE: D1Database | undefined;
+  var DB: D1Database | undefined;
+  var env: { DATABASE?: D1Database; DB?: D1Database } | undefined;
+}
 
 interface WaitlistEntry {
   id: string;
-  name: string;
+  full_name: string;
   email: string;
   company: string;
-  teamSize?: string;
+  team_size?: string;
   priority?: string;
-  createdAt: Date;
 }
-
-const waitlistStore: WaitlistEntry[] = [];
 
 export async function POST(request: Request) {
   try {
@@ -45,25 +50,50 @@ export async function POST(request: Request) {
       );
     }
 
-    const emailExists = waitlistStore.some((entry) => entry.email.toLowerCase() === email.toLowerCase());
-    if (emailExists) {
+    const db = getD1Database(request);
+    if (!db) {
+      // debug logging to help diagnose
+      if (typeof globalThis !== 'undefined') {
+        const g = globalThis as any;
+        console.error("Database not found. Checking globalThis...");
+        console.error("globalThis.env exists:", !!g.env);
+        if (g.env) console.error("globalThis.env keys:", Object.keys(g.env));
+      }
+      return NextResponse.json(
+        { success: false, error: "Database not available. Check server logs for debug info." },
+        { status: 500 }
+      );
+    }
+
+    const existing = await db
+      .prepare("SELECT id FROM waitlist WHERE LOWER(email) = LOWER(?)")
+      .bind(email)
+      .first();
+
+    if (existing) {
       return NextResponse.json(
         { success: false, error: "Email already on waitlist" },
         { status: 409 }
       );
     }
 
+    const id = `entry_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    await db
+      .prepare(
+        "INSERT INTO waitlist (id, full_name, email, company, team_size, priority) VALUES (?, ?, ?, ?, ?, ?)"
+      )
+      .bind(id, name, email, company, teamSize || null, priority || null)
+      .run();
+
     const entry: WaitlistEntry = {
-      id: `entry_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      name,
+      id,
+      full_name: name,
       email,
       company,
-      teamSize,
+      team_size: teamSize,
       priority,
-      createdAt: new Date(),
     };
-
-    waitlistStore.push(entry);
 
     return NextResponse.json(
       {
@@ -71,9 +101,9 @@ export async function POST(request: Request) {
         message: "Added to waitlist successfully",
         entry: {
           id: entry.id,
-          name: entry.name,
+          full_name: entry.full_name,
           company: entry.company,
-          teamSize: entry.teamSize,
+          team_size: entry.team_size,
         },
       },
       { status: 201 }
@@ -84,10 +114,46 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
-  return NextResponse.json({
-    success: true,
-    total: waitlistStore.length,
-    entries: waitlistStore,
-  });
+export async function GET(request: Request) {
+  try {
+    const db = getD1Database(request);
+    if (!db) {
+      // debug logging
+      if (typeof globalThis !== 'undefined') {
+        const g = globalThis as any;
+        console.error("Database not found. Checking globalThis...");
+        console.error("globalThis.env exists:", !!g.env);
+        if (g.env) console.error("globalThis.env keys:", Object.keys(g.env));
+      }
+      return NextResponse.json(
+        { success: false, error: "Database not available. Check server logs for debug info." },
+        { status: 500 }
+      );
+    }
+
+    const result = await db
+      .prepare("SELECT id, full_name, email, company, team_size, priority FROM waitlist ORDER BY id DESC")
+      .all();
+
+    const entries: WaitlistEntry[] = (result.results || []).map((row: any) => ({
+      id: row.id,
+      full_name: row.full_name,
+      email: row.email,
+      company: row.company,
+      team_size: row.team_size || undefined,
+      priority: row.priority || undefined,
+    }));
+
+    return NextResponse.json({
+      success: true,
+      total: entries.length,
+      entries,
+    });
+  } catch (error) {
+    console.error("Waitlist GET error:", error);
+    return NextResponse.json(
+      { success: false, error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }
