@@ -1,4 +1,4 @@
-main = ".open-next/worker.js"
+main = ".open-next/_worker.js"
 name = "spinwellness-web"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
