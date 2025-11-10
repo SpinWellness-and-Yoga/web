@@ -41,3 +41,6 @@ next-env.d.ts
 .open-next/_worker.js
 
 wrangler.toml
+.env
+data/waitlist.json
+/data

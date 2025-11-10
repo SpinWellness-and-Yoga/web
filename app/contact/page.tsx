@@ -50,7 +50,7 @@ export default function ContactPage() {
       }
 
       setStatus('success');
-      setFeedback('Thank you! Your message has been sent. We\'ll get back to you soon.');
+      setFeedback('Thank you! Your message has been sent. We&apos;ll get back to you soon.');
       setFormData(initialState);
     } catch (error) {
       console.error('Contact form error', error);
@@ -86,10 +86,10 @@ export default function ContactPage() {
           <div className={styles.heroContent}>
             <div className={styles.heroCopy}>
               <span className={styles.kicker}>Get in Touch</span>
-              <h1 className={styles.heroTitle}>Let's transform workplace wellness together</h1>
+              <h1 className={styles.heroTitle}>Let&apos;s transform workplace wellness together</h1>
               <p className={styles.heroBody}>
                 Have questions about our corporate wellness programs? Want to learn how we can support your team? 
-                We'd love to hear from you.
+                We&apos;d love to hear from you.
               </p>
             </div>
           </div>
