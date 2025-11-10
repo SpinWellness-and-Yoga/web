@@ -6,8 +6,3 @@ compatibility_flags = ["nodejs_compat"]
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
-
-[[routes]]
-pattern = "spinwellness.org"
-custom_domain = true
-override_existing_dns_record = true
