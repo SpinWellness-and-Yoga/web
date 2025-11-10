@@ -24,6 +24,18 @@ function getEnvFromRequest(request: Request): any {
 export async function POST(request: Request) {
   try {
     const env = getEnvFromRequest(request);
+    
+    // log what we found for debugging
+    console.log('[waitlist POST] Env from request:', env ? { hasKeys: Object.keys(env).length > 0, keys: Object.keys(env) } : 'not found');
+    
+    // also check globalThis directly
+    if (typeof globalThis !== 'undefined') {
+      const g = globalThis as any;
+      console.log('[waitlist POST] globalThis.env exists:', !!g.env);
+      console.log('[waitlist POST] globalThis.env keys:', g.env ? Object.keys(g.env) : 'none');
+      console.log('[waitlist POST] RESEND_API_KEY in globalThis.env:', !!g.env?.RESEND_API_KEY);
+    }
+    
     const contentType = request.headers.get("content-type") ?? "";
 
     let name = "";
@@ -63,18 +75,28 @@ export async function POST(request: Request) {
       priority,
     };
 
-    // send emails (non-blocking)
-    sendWaitlistNotification(entry, env).catch((err) => {
-      console.error('[waitlist POST] Email notification failed:', err);
-    });
+    // send emails - await to ensure they complete and we can see logs
+    console.log('[waitlist POST] Starting email sends...');
     
-    sendWaitlistConfirmation({
-      full_name: entry.full_name,
-      email: entry.email,
-      company: entry.company,
-    }, env).catch((err) => {
+    try {
+      await sendWaitlistNotification(entry, env);
+      console.log('[waitlist POST] Notification email completed');
+    } catch (err) {
+      console.error('[waitlist POST] Email notification failed:', err);
+    }
+    
+    try {
+      await sendWaitlistConfirmation({
+        full_name: entry.full_name,
+        email: entry.email,
+        company: entry.company,
+      }, env);
+      console.log('[waitlist POST] Confirmation email completed');
+    } catch (err) {
       console.error('[waitlist POST] Confirmation email failed:', err);
-    });
+    }
+    
+    console.log('[waitlist POST] All email operations finished');
 
     return NextResponse.json(
       {

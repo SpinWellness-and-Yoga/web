@@ -1,4 +1,4 @@
-import { Resend } from 'resend';
+import {Resend} from 'resend';
 
 function getEnvVar(key: string, env?: any): string | undefined {
   // with nodejs_compat, process.env should work in cloudflare workers
@@ -66,20 +66,26 @@ export async function sendWaitlistNotification(entry: {
   try {
     console.log('[sendWaitlistNotification] Attempting to send email to:', adminEmail);
     console.log('[sendWaitlistNotification] API key present:', !!resendApiKey);
+    console.log('[sendWaitlistNotification] Creating Resend client...');
     
     const resend = new Resend(resendApiKey);
-    const { data, error } = await resend.emails.send(emailPayload);
+    console.log('[sendWaitlistNotification] Resend client created, calling send...');
+    
+    const result = await resend.emails.send(emailPayload);
+    console.log('[sendWaitlistNotification] Resend call completed');
+    console.log('[sendWaitlistNotification] Result:', JSON.stringify({ hasData: !!result.data, hasError: !!result.error }, null, 2));
 
-    if (error) {
-      console.error('[sendWaitlistNotification] Resend API error:', JSON.stringify(error, null, 2));
+    if (result.error) {
+      console.error('[sendWaitlistNotification] Resend API error:', JSON.stringify(result.error, null, 2));
     } else {
-      console.log('[sendWaitlistNotification] Email sent successfully:', JSON.stringify(data, null, 2));
+      console.log('[sendWaitlistNotification] Email sent successfully:', JSON.stringify(result.data, null, 2));
     }
   } catch (error) {
-    console.error('[sendWaitlistNotification] Failed to send email:', error);
+    console.error('[sendWaitlistNotification] Exception caught:', error);
     console.error('[sendWaitlistNotification] Error details:', {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : typeof error,
     });
   }
 }
@@ -150,20 +156,26 @@ export async function sendWaitlistConfirmation(entry: {
 
   try {
     console.log('[sendWaitlistConfirmation] Attempting to send email to:', entry.email);
+    console.log('[sendWaitlistConfirmation] Creating Resend client...');
     
     const resend = new Resend(resendApiKey);
-    const { data, error } = await resend.emails.send(emailPayload);
+    console.log('[sendWaitlistConfirmation] Resend client created, calling send...');
+    
+    const result = await resend.emails.send(emailPayload);
+    console.log('[sendWaitlistConfirmation] Resend call completed');
+    console.log('[sendWaitlistConfirmation] Result:', JSON.stringify({ hasData: !!result.data, hasError: !!result.error }, null, 2));
 
-    if (error) {
-      console.error('[sendWaitlistConfirmation] Resend API error:', JSON.stringify(error, null, 2));
+    if (result.error) {
+      console.error('[sendWaitlistConfirmation] Resend API error:', JSON.stringify(result.error, null, 2));
     } else {
-      console.log('[sendWaitlistConfirmation] Email sent successfully:', JSON.stringify(data, null, 2));
+      console.log('[sendWaitlistConfirmation] Email sent successfully:', JSON.stringify(result.data, null, 2));
     }
   } catch (error) {
-    console.error('[sendWaitlistConfirmation] Failed to send email:', error);
+    console.error('[sendWaitlistConfirmation] Exception caught:', error);
     console.error('[sendWaitlistConfirmation] Error details:', {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : typeof error,
     });
   }
 }
@@ -200,20 +212,26 @@ export async function sendContactNotification(entry: {
 
   try {
     console.log('[sendContactNotification] Attempting to send email to:', adminEmail);
+    console.log('[sendContactNotification] Creating Resend client...');
     
     const resend = new Resend(resendApiKey);
-    const { data, error } = await resend.emails.send(emailPayload);
+    console.log('[sendContactNotification] Resend client created, calling send...');
+    
+    const result = await resend.emails.send(emailPayload);
+    console.log('[sendContactNotification] Resend call completed');
+    console.log('[sendContactNotification] Result:', JSON.stringify({ hasData: !!result.data, hasError: !!result.error }, null, 2));
 
-    if (error) {
-      console.error('[sendContactNotification] Resend API error:', JSON.stringify(error, null, 2));
+    if (result.error) {
+      console.error('[sendContactNotification] Resend API error:', JSON.stringify(result.error, null, 2));
     } else {
-      console.log('[sendContactNotification] Email sent successfully:', JSON.stringify(data, null, 2));
+      console.log('[sendContactNotification] Email sent successfully:', JSON.stringify(result.data, null, 2));
     }
   } catch (error) {
-    console.error('[sendContactNotification] Failed to send email:', error);
+    console.error('[sendContactNotification] Exception caught:', error);
     console.error('[sendContactNotification] Error details:', {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : typeof error,
     });
   }
 }
@@ -272,20 +290,26 @@ export async function sendContactConfirmation(entry: {
 
   try {
     console.log('[sendContactConfirmation] Attempting to send email to:', entry.email);
+    console.log('[sendContactConfirmation] Creating Resend client...');
     
     const resend = new Resend(resendApiKey);
-    const { data, error } = await resend.emails.send(emailPayload);
+    console.log('[sendContactConfirmation] Resend client created, calling send...');
+    
+    const result = await resend.emails.send(emailPayload);
+    console.log('[sendContactConfirmation] Resend call completed');
+    console.log('[sendContactConfirmation] Result:', JSON.stringify({ hasData: !!result.data, hasError: !!result.error }, null, 2));
 
-    if (error) {
-      console.error('[sendContactConfirmation] Resend API error:', JSON.stringify(error, null, 2));
+    if (result.error) {
+      console.error('[sendContactConfirmation] Resend API error:', JSON.stringify(result.error, null, 2));
     } else {
-      console.log('[sendContactConfirmation] Email sent successfully:', JSON.stringify(data, null, 2));
+      console.log('[sendContactConfirmation] Email sent successfully:', JSON.stringify(result.data, null, 2));
     }
   } catch (error) {
-    console.error('[sendContactConfirmation] Failed to send email:', error);
+    console.error('[sendContactConfirmation] Exception caught:', error);
     console.error('[sendContactConfirmation] Error details:', {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : typeof error,
     });
   }
 }
