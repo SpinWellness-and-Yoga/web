@@ -1,22 +1,23 @@
 function getEnvVar(key: string, env?: any): string | undefined {
-  // try env parameter first (from request context)
-  if (env?.[key]) return env[key];
-  if (env?.env?.[key]) return env.env[key];
-  if (env?.vars?.[key]) return env.vars[key];
-  
-  // node.js / local development
+  // with nodejs_compat, process.env should work in cloudflare workers
+  // try process.env first (works in both local and cloudflare with nodejs_compat)
   if (typeof process !== 'undefined' && process.env?.[key]) {
     return process.env[key];
   }
   
-  // cloudflare workers global scope - this is where dashboard vars are available
+  // try env parameter (from request context)
+  if (env?.[key]) return env[key];
+  if (env?.env?.[key]) return env.env[key];
+  if (env?.vars?.[key]) return env.vars[key];
+  
+  // cloudflare workers global scope - dashboard vars might be here
   if (typeof globalThis !== 'undefined') {
     const g = globalThis as any;
     
-    // standard cloudflare workers env location
+    // check env object
     if (g.env?.[key]) return g.env[key];
     
-    // direct global access (sometimes vars are at top level)
+    // direct global access
     if (g[key]) return g[key];
     
     // alternative locations
@@ -34,13 +35,9 @@ export async function sendWaitlistNotification(entry: {
   team_size?: string;
   priority?: string;
 }, env?: any): Promise<void> {
-  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
-  const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellness.org';
-
-  if (!resendApiKey) {
-    console.error('[sendWaitlistNotification] RESEND_API_KEY not found');
-    return;
-  }
+  // temporary hardcoded values for testing
+  const resendApiKey = 're_Yzg18yhQ_A5DEpPBcu54b56fRmaUQrPWY';
+  const adminEmail = 'admin@spinwellness.org';
 
   const emailBody = `
     <h2>New Waitlist Entry</h2>
@@ -92,12 +89,8 @@ export async function sendWaitlistConfirmation(entry: {
   email: string;
   company: string;
 }, env?: any): Promise<void> {
-  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
-
-  if (!resendApiKey) {
-    console.error('[sendWaitlistConfirmation] RESEND_API_KEY not found');
-    return;
-  }
+  // temporary hardcoded values for testing
+  const resendApiKey = 're_Yzg18yhQ_A5DEpPBcu54b56fRmaUQrPWY';
 
   const logoUrl = 'https://spinwellness.org/logos/SWAY-Alt-logo-PNG.png';
 
@@ -183,13 +176,9 @@ export async function sendContactNotification(entry: {
   email: string;
   message: string;
 }, env?: any): Promise<void> {
-  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
-  const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellness.org';
-
-  if (!resendApiKey) {
-    console.error('[sendContactNotification] RESEND_API_KEY not found');
-    return;
-  }
+  // temporary hardcoded values for testing
+  const resendApiKey = 're_Yzg18yhQ_A5DEpPBcu54b56fRmaUQrPWY';
+  const adminEmail = 'admin@spinwellness.org';
 
   const emailBody = `
     <h2>New Contact Form Submission</h2>
@@ -239,12 +228,8 @@ export async function sendContactConfirmation(entry: {
   name: string;
   email: string;
 }, env?: any): Promise<void> {
-  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
-
-  if (!resendApiKey) {
-    console.error('[sendContactConfirmation] RESEND_API_KEY not found');
-    return;
-  }
+  // temporary hardcoded values for testing
+  const resendApiKey = 're_Yzg18yhQ_A5DEpPBcu54b56fRmaUQrPWY';
 
   const logoUrl = 'https://spinwellness.org/logos/SWAY-Alt-logo-PNG.png';
 
