@@ -1,21 +1,5 @@
 import { NextResponse } from "next/server";
-import { getD1Database, type D1Database } from "@/lib/d1";
-
-// cloudflare workers runtime - env is available globally
-declare global {
-  var DATABASE: D1Database | undefined;
-  var DB: D1Database | undefined;
-  var env: { DATABASE?: D1Database; DB?: D1Database } | undefined;
-}
-
-interface WaitlistEntry {
-  id: string;
-  full_name: string;
-  email: string;
-  company: string;
-  team_size?: string;
-  priority?: string;
-}
+import { addEntry, getAllEntries, type WaitlistEntry } from "@/lib/waitlist-storage";
 
 export async function POST(request: Request) {
   try {
@@ -50,41 +34,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const db = getD1Database(request);
-    if (!db) {
-      // debug logging to help diagnose
-      if (typeof globalThis !== 'undefined') {
-        const g = globalThis as any;
-        console.error("Database not found. Checking globalThis...");
-        console.error("globalThis.env exists:", !!g.env);
-        if (g.env) console.error("globalThis.env keys:", Object.keys(g.env));
-      }
-      return NextResponse.json(
-        { success: false, error: "Database not available. Check server logs for debug info." },
-        { status: 500 }
-      );
-    }
-
-    const existing = await db
-      .prepare("SELECT id FROM waitlist WHERE LOWER(email) = LOWER(?)")
-      .bind(email)
-      .first();
-
-    if (existing) {
-      return NextResponse.json(
-        { success: false, error: "Email already on waitlist" },
-        { status: 409 }
-      );
-    }
-
     const id = `entry_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-
-    await db
-      .prepare(
-        "INSERT INTO waitlist (id, full_name, email, company, team_size, priority) VALUES (?, ?, ?, ?, ?, ?)"
-      )
-      .bind(id, name, email, company, teamSize || null, priority || null)
-      .run();
 
     const entry: WaitlistEntry = {
       id,
@@ -94,6 +44,18 @@ export async function POST(request: Request) {
       team_size: teamSize,
       priority,
     };
+
+    try {
+      await addEntry(entry);
+    } catch (error: any) {
+      if (error.message === 'Email already on waitlist') {
+        return NextResponse.json(
+          { success: false, error: "Email already on waitlist" },
+          { status: 409 }
+        );
+      }
+      throw error;
+    }
 
     return NextResponse.json(
       {
@@ -116,33 +78,7 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const db = getD1Database(request);
-    if (!db) {
-      // debug logging
-      if (typeof globalThis !== 'undefined') {
-        const g = globalThis as any;
-        console.error("Database not found. Checking globalThis...");
-        console.error("globalThis.env exists:", !!g.env);
-        if (g.env) console.error("globalThis.env keys:", Object.keys(g.env));
-      }
-      return NextResponse.json(
-        { success: false, error: "Database not available. Check server logs for debug info." },
-        { status: 500 }
-      );
-    }
-
-    const result = await db
-      .prepare("SELECT id, full_name, email, company, team_size, priority FROM waitlist ORDER BY id DESC")
-      .all();
-
-    const entries: WaitlistEntry[] = (result.results || []).map((row: any) => ({
-      id: row.id,
-      full_name: row.full_name,
-      email: row.email,
-      company: row.company,
-      team_size: row.team_size || undefined,
-      priority: row.priority || undefined,
-    }));
+    const entries = await getAllEntries();
 
     return NextResponse.json({
       success: true,

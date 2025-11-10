@@ -6,9 +6,9 @@ import styles from "./page.module.css";
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: "Spinwellness & Yoga | Holistic Employee Wellness",
+  title: "Spinwellness & Yoga | Transform Employee Wellness",
   description:
-    "Spinwellness & Yoga delivers employee therapy, wellness culture design, and curated wellbeing resources. Join the waitlist for our March 2026 MVP.",
+    "A holistic wellness platform for modern workplaces. Employee wellness, productivity, wellbeing, and company wellness culture reimagined.",
 };
 
 const services = [
@@ -44,7 +44,6 @@ const promises = [
 const stats = [
   { value: "92%", label: "of teams report calmer weeks" },
   { value: "3x", label: "productivity lift after 90 days" },
-  { value: "March 2026", label: "MVP launch for founding partners" },
 ];
 
 export default function Home() {
@@ -76,7 +75,31 @@ export default function Home() {
             <div className={styles.heroCopy}>
               <span className={styles.kicker}>Transform Employee Wellness</span>
               <h1 className={styles.heroTitle}>...the OM of bliss</h1>
-              <p className={styles.heroBody}>Workplace wellness reimagined. Launching soon.</p>
+              <p className={styles.heroBody}>
+                A holistic wellness platform for modern workplaces.
+              </p>
+              <div className={styles.heroHighlights}>
+                <div className={styles.highlightItem}>
+                  <span className={styles.highlightIcon}>🧘</span>
+                  <span className={styles.highlightText}><strong>Employee Wellness</strong> that feels personal, not corporate</span>
+                </div>
+                <div className={styles.highlightItem}>
+                  <span className={styles.highlightIcon}>⚡</span>
+                  <span className={styles.highlightText}><strong>Productivity</strong> powered by sustainable energy, not burnout</span>
+                </div>
+                <div className={styles.highlightItem}>
+                  <span className={styles.highlightIcon}>💚</span>
+                  <span className={styles.highlightText}><strong>Wellbeing</strong> embedded in every workday, every interaction</span>
+                </div>
+                <div className={styles.highlightItem}>
+                  <span className={styles.highlightIcon}>🌱</span>
+                  <span className={styles.highlightText}><strong>Wellness Culture</strong> that transforms how teams thrive together</span>
+                </div>
+              </div>
+              <p className={styles.heroSubtext}>
+                Be the first to experience workplace wellness reimagined—where therapy meets movement, 
+                productivity meets peace, and culture becomes your competitive advantage.
+              </p>
               <div className={styles.heroActions}>
                 <a href="#waitlist" className={styles.primaryButton}>
                   Join Waitlist
