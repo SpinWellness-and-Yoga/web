@@ -4,11 +4,13 @@ import { sendContactNotification, sendContactConfirmation } from "@/lib/email";
 function getEnvFromRequest(request: Request): any {
   const req = request as any;
   
+  // opennext cloudflare passes env through various locations
   if (req.env) return req.env;
   if (req.ctx?.env) return req.ctx.env;
   if (req.cloudflare?.env) return req.cloudflare.env;
   if (req.runtime?.env) return req.runtime.env;
   
+  // cloudflare workers global - dashboard vars are available here
   if (typeof globalThis !== 'undefined') {
     const g = globalThis as any;
     if (g.env) return g.env;
@@ -34,12 +36,13 @@ export async function POST(request: Request) {
       );
     }
 
+    // send emails (non-blocking)
     sendContactNotification({ name, email, message }, env).catch((err) => {
-      console.error('Contact notification failed:', err);
+      console.error('[contact POST] Contact notification failed:', err);
     });
     
     sendContactConfirmation({ name, email }, env).catch((err) => {
-      console.error('Contact confirmation failed:', err);
+      console.error('[contact POST] Contact confirmation failed:', err);
     });
 
     return NextResponse.json(
@@ -50,7 +53,7 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Contact API error:', error);
+    console.error("Contact API error:", error);
     return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
   }
 }
