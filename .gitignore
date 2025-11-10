@@ -44,3 +44,4 @@ wrangler.toml
 .env
 data/waitlist.json
 /data
+*.toml
