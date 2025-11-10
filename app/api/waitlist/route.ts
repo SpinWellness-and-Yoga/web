@@ -4,56 +4,26 @@ import { sendWaitlistNotification, sendWaitlistConfirmation } from "@/lib/email"
 function getEnvFromRequest(request: Request): any {
   const req = request as any;
   
-  console.log('[getEnvFromRequest] Checking request object for env...');
-  console.log('[getEnvFromRequest] Request keys:', Object.keys(req).filter(k => !k.startsWith('_')));
-  
   // opennext cloudflare passes env through various locations
-  if (req.env) {
-    console.log('[getEnvFromRequest] Found env in req.env');
-    return req.env;
-  }
-  if (req.ctx?.env) {
-    console.log('[getEnvFromRequest] Found env in req.ctx.env');
-    return req.ctx.env;
-  }
-  if (req.cloudflare?.env) {
-    console.log('[getEnvFromRequest] Found env in req.cloudflare.env');
-    return req.cloudflare.env;
-  }
-  if (req.runtime?.env) {
-    console.log('[getEnvFromRequest] Found env in req.runtime.env');
-    return req.runtime.env;
-  }
+  if (req.env) return req.env;
+  if (req.ctx?.env) return req.ctx.env;
+  if (req.cloudflare?.env) return req.cloudflare.env;
+  if (req.runtime?.env) return req.runtime.env;
   
-  // cloudflare workers global - check multiple locations
+  // cloudflare workers global - dashboard vars are available here
   if (typeof globalThis !== 'undefined') {
     const g = globalThis as any;
-    
-    if (g.env) {
-      console.log('[getEnvFromRequest] Found env in globalThis.env');
-      return g.env;
-    }
-    
-    if (g.__env__) {
-      console.log('[getEnvFromRequest] Found env in globalThis.__env__');
-      return g.__env__;
-    }
-    
-    // check for cloudflare workers context
-    if (g.__CLOUDFLARE_ENV__) {
-      console.log('[getEnvFromRequest] Found env in globalThis.__CLOUDFLARE_ENV__');
-      return g.__CLOUDFLARE_ENV__;
-    }
+    if (g.env) return g.env;
+    if (g.__env__) return g.__env__;
+    if (g.__CLOUDFLARE_ENV__) return g.__CLOUDFLARE_ENV__;
   }
   
-  console.log('[getEnvFromRequest] No env found in request or global scope');
   return undefined;
 }
 
 export async function POST(request: Request) {
   try {
     const env = getEnvFromRequest(request);
-    console.log('[waitlist POST] Env object:', env ? { keys: Object.keys(env), hasResendKey: !!env.RESEND_API_KEY, hasAdminEmail: !!env.ADMIN_EMAIL } : 'no env');
     const contentType = request.headers.get("content-type") ?? "";
 
     let name = "";
@@ -94,13 +64,10 @@ export async function POST(request: Request) {
     };
 
     // send emails (non-blocking)
-    console.log('[waitlist POST] Starting email sends...');
-    // notify admin
     sendWaitlistNotification(entry, env).catch((err) => {
       console.error('[waitlist POST] Email notification failed:', err);
     });
     
-    // send confirmation to user
     sendWaitlistConfirmation({
       full_name: entry.full_name,
       email: entry.email,
