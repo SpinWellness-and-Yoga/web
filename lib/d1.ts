@@ -1,3 +1,17 @@
+// D1Database type from Cloudflare Workers
+export type D1Database = {
+  prepare: (query: string) => {
+    bind: (...args: any[]) => {
+      first: () => Promise<any>;
+      all: () => Promise<{ results: any[] }>;
+      run: () => Promise<void>;
+    };
+    first: () => Promise<any>;
+    all: () => Promise<{ results: any[] }>;
+    run: () => Promise<void>;
+  };
+};
+
 export function getD1Database(request?: Request): D1Database | null {
   // cloudflare workers runtime - env is available in global scope
   if (typeof globalThis !== 'undefined') {

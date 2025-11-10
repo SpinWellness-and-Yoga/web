@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getD1Database } from "@/lib/d1";
+import { getD1Database, type D1Database } from "@/lib/d1";
 
 // cloudflare workers runtime - env is available globally
 declare global {
