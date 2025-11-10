@@ -1,22 +1,57 @@
 function getEnvVar(key: string, env?: any): string | undefined {
+  console.log(`[getEnvVar] Looking for ${key}, env provided:`, !!env);
+  
   // cloudflare workers - env passed from request context
   if (env) {
-    if (env[key]) return env[key];
-    if (env.env?.[key]) return env.env[key];
+    console.log(`[getEnvVar] Env object keys:`, Object.keys(env));
+    if (env[key]) {
+      console.log(`[getEnvVar] Found ${key} in env[key]`);
+      return env[key];
+    }
+    if (env.env?.[key]) {
+      console.log(`[getEnvVar] Found ${key} in env.env[key]`);
+      return env.env[key];
+    }
+    // check for nested structures
+    if (env.vars?.[key]) {
+      console.log(`[getEnvVar] Found ${key} in env.vars[key]`);
+      return env.vars[key];
+    }
   }
   
   // node.js / local development
   if (typeof process !== 'undefined' && process.env) {
-    return process.env[key];
+    const value = process.env[key];
+    if (value) {
+      console.log(`[getEnvVar] Found ${key} in process.env`);
+      return value;
+    }
   }
   
-  // cloudflare workers global
+  // cloudflare workers global - check multiple locations
   if (typeof globalThis !== 'undefined') {
     const g = globalThis as any;
-    if (g.env?.[key]) return g.env[key];
-    if (g[key]) return g[key];
+    
+    // standard cloudflare workers env location
+    if (g.env?.[key]) {
+      console.log(`[getEnvVar] Found ${key} in globalThis.env`);
+      return g.env[key];
+    }
+    
+    // direct global access
+    if (g[key]) {
+      console.log(`[getEnvVar] Found ${key} in globalThis[key]`);
+      return g[key];
+    }
+    
+    // check for cloudflare-specific locations
+    if (g.__env__?.[key]) {
+      console.log(`[getEnvVar] Found ${key} in globalThis.__env__`);
+      return g.__env__[key];
+    }
   }
   
+  console.log(`[getEnvVar] ${key} not found in any location`);
   return undefined;
 }
 
