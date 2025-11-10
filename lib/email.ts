@@ -62,6 +62,8 @@ export async function sendWaitlistNotification(entry: {
   };
 
   try {
+    console.log('[sendWaitlistNotification] Attempting to send email to:', adminEmail);
+    console.log('[sendWaitlistNotification] API key present:', !!resendApiKey);
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -153,13 +155,14 @@ export async function sendWaitlistConfirmation(entry: {
   `;
 
   const emailPayload = {
-    from: 'Ajoke Ibrahim <ajoke@spinwellness.org>',
+    from: 'Ajoke Ibrahim <admin@spinwellness.org>',
     to: [entry.email],
     subject: 'Welcome to the Spinwellness Waitlist',
     html: emailBody,
   };
 
   try {
+    console.log('[sendWaitlistConfirmation] Attempting to send email to:', entry.email);
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -170,7 +173,8 @@ export async function sendWaitlistConfirmation(entry: {
     });
 
     const responseText = await response.text();
-    console.log('[sendWaitlistConfirmation] Resend response:', response.status, responseText);
+    console.log('[sendWaitlistConfirmation] Resend response status:', response.status);
+    console.log('[sendWaitlistConfirmation] Resend response body:', responseText);
 
     if (!response.ok) {
       let errorData;
@@ -179,10 +183,16 @@ export async function sendWaitlistConfirmation(entry: {
       } catch {
         errorData = { raw: responseText };
       }
-      console.error('[sendWaitlistConfirmation] Resend API error:', errorData);
+      console.error('[sendWaitlistConfirmation] Resend API error:', JSON.stringify(errorData, null, 2));
+    } else {
+      console.log('[sendWaitlistConfirmation] Email sent successfully');
     }
   } catch (error) {
     console.error('[sendWaitlistConfirmation] Failed to send email:', error);
+    console.error('[sendWaitlistConfirmation] Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
   }
 }
 
@@ -210,13 +220,14 @@ export async function sendContactNotification(entry: {
   `;
 
   const emailPayload = {
-    from: 'Spinwellness Contact Form <noreply@spinwellness.org>',
+    from: 'Spinwellness Contact Form <admin@spinwellness.org>',
     to: [adminEmail],
     subject: `New Contact: ${entry.name}`,
     html: emailBody,
   };
 
   try {
+    console.log('[sendContactNotification] Attempting to send email to:', adminEmail);
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -227,7 +238,8 @@ export async function sendContactNotification(entry: {
     });
 
     const responseText = await response.text();
-    console.log('[sendContactNotification] Resend response:', response.status, responseText);
+    console.log('[sendContactNotification] Resend response status:', response.status);
+    console.log('[sendContactNotification] Resend response body:', responseText);
 
     if (!response.ok) {
       let errorData;
@@ -236,10 +248,16 @@ export async function sendContactNotification(entry: {
       } catch {
         errorData = { raw: responseText };
       }
-      console.error('[sendContactNotification] Resend API error:', errorData);
+      console.error('[sendContactNotification] Resend API error:', JSON.stringify(errorData, null, 2));
+    } else {
+      console.log('[sendContactNotification] Email sent successfully');
     }
   } catch (error) {
     console.error('[sendContactNotification] Failed to send email:', error);
+    console.error('[sendContactNotification] Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
   }
 }
 
@@ -296,6 +314,7 @@ export async function sendContactConfirmation(entry: {
   };
 
   try {
+    console.log('[sendContactConfirmation] Attempting to send email to:', entry.email);
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -306,7 +325,8 @@ export async function sendContactConfirmation(entry: {
     });
 
     const responseText = await response.text();
-    console.log('[sendContactConfirmation] Resend response:', response.status, responseText);
+    console.log('[sendContactConfirmation] Resend response status:', response.status);
+    console.log('[sendContactConfirmation] Resend response body:', responseText);
 
     if (!response.ok) {
       let errorData;
@@ -315,10 +335,16 @@ export async function sendContactConfirmation(entry: {
       } catch {
         errorData = { raw: responseText };
       }
-      console.error('[sendContactConfirmation] Resend API error:', errorData);
+      console.error('[sendContactConfirmation] Resend API error:', JSON.stringify(errorData, null, 2));
+    } else {
+      console.log('[sendContactConfirmation] Email sent successfully');
     }
   } catch (error) {
     console.error('[sendContactConfirmation] Failed to send email:', error);
+    console.error('[sendContactConfirmation] Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
   }
 }
 
