@@ -1,0 +1,53 @@
+/* brand colors - exact from style guide */
+:root {
+  --color-midnight: #151b47;
+  --color-ivory: #fdf7f1;
+  --color-coral: #f16f64;
+  --color-cocoa: #7b5b45;
+  --color-evergreen: #3f6f59;
+  --color-sand: #f3e6da;
+  --max-width: 1200px;
+  --radius-lg: 28px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans), "Segoe UI", "Helvetica Neue", sans-serif;
+  line-height: 1.6;
+  background-color: var(--color-ivory);
+  color: var(--color-midnight);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+main {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+section {
+  scroll-margin-top: 96px;
+}
