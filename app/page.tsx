@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import WaitlistCard from "./_components/WaitlistCard";
+import { BuildingIcon, LightningIcon, HeartIcon, PlantIcon } from "./_components/Icons";
 import styles from "./page.module.css";
 
 export const dynamic = 'force-dynamic';
@@ -59,11 +60,13 @@ export default function Home() {
               height={100}
               priority
             />
+            <span className={styles.brandTagline}>...the OM of bliss</span>
           </a>
           <nav className={styles.navLinks} aria-label="Primary">
             <a href="#services">Services</a>
             <a href="#why">Why Us</a>
             <a href="#waitlist">Waitlist</a>
+            <a href="/contact">Contact</a>
           </nav>
 
         </div>
@@ -73,36 +76,42 @@ export default function Home() {
         <section className={styles.hero}>
           <div className={styles.heroContent}>
             <div className={styles.heroCopy}>
-              <span className={styles.kicker}>Transform Employee Wellness</span>
-              <h1 className={styles.heroTitle}>...the OM of bliss</h1>
-              <p className={styles.heroBody}>
-                A holistic wellness platform for modern workplaces.
-              </p>
-              <div className={styles.heroHighlights}>
-                <div className={styles.highlightItem}>
-                  <span className={styles.highlightIcon}>🧘</span>
-                  <span className={styles.highlightText}><strong>Employee Wellness</strong> that feels personal, not corporate</span>
-                </div>
-                <div className={styles.highlightItem}>
-                  <span className={styles.highlightIcon}>⚡</span>
-                  <span className={styles.highlightText}><strong>Productivity</strong> powered by sustainable energy, not burnout</span>
-                </div>
-                <div className={styles.highlightItem}>
-                  <span className={styles.highlightIcon}>💚</span>
-                  <span className={styles.highlightText}><strong>Wellbeing</strong> embedded in every workday, every interaction</span>
-                </div>
-                <div className={styles.highlightItem}>
-                  <span className={styles.highlightIcon}>🌱</span>
-                  <span className={styles.highlightText}><strong>Wellness Culture</strong> that transforms how teams thrive together</span>
+              <span className={styles.kicker}>Transforming Employee Wellness</span>
+              <div className={styles.whatWeDoSection}>
+                <h2 className={styles.whatWeDoTitle}>What We Do</h2>
+                <p className={styles.whatWeDoIntro}>
+                  Providing comprehensive corporate and employee wellness services that transform workplace culture, boost productivity, and nurture sustainable wellbeing for modern teams.
+                </p>
+                <div className={styles.heroHighlights}>
+                  <div className={styles.highlightItem}>
+                    <div className={styles.highlightIcon}>
+                      <BuildingIcon />
+                    </div>
+                    <span className={styles.highlightText}><strong>Corporate Wellness Programs</strong> designed for modern teams and employees</span>
+                  </div>
+                  <div className={styles.highlightItem}>
+                    <div className={styles.highlightIcon}>
+                      <LightningIcon />
+                    </div>
+                    <span className={styles.highlightText}><strong>Productivity</strong> powered by sustainable energy, not burnout</span>
+                  </div>
+                  <div className={styles.highlightItem}>
+                    <div className={styles.highlightIcon}>
+                      <HeartIcon />
+                    </div>
+                    <span className={styles.highlightText}><strong>Employee Wellbeing</strong> embedded in every workday, every interaction</span>
+                  </div>
+                  <div className={styles.highlightItem}>
+                    <div className={styles.highlightIcon}>
+                      <PlantIcon />
+                    </div>
+                    <span className={styles.highlightText}><strong>Organisational Wellness Culture</strong> that we curate and develop your company wellness culture</span>
+                  </div>
                 </div>
               </div>
-              <p className={styles.heroSubtext}>
-                Be the first to experience workplace wellness reimagined—where therapy meets movement, 
-                productivity meets peace, and culture becomes your competitive advantage.
-              </p>
               <div className={styles.heroActions}>
-                <a href="#waitlist" className={styles.primaryButton}>
-                  Join Waitlist
+                <a href="/contact" className={styles.primaryButton}>
+                  Contact Us
                 </a>
               </div>
             </div>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { addEntry, getAllEntries, type WaitlistEntry } from "@/lib/waitlist-storage";
+import { sendWaitlistNotification, sendWaitlistConfirmation } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -56,6 +57,21 @@ export async function POST(request: Request) {
       }
       throw error;
     }
+
+    // send emails (non-blocking)
+    // notify admin
+    sendWaitlistNotification(entry).catch((err) => {
+      console.error('Email notification failed:', err);
+    });
+    
+    // send confirmation to user
+    sendWaitlistConfirmation({
+      full_name: entry.full_name,
+      email: entry.email,
+      company: entry.company,
+    }).catch((err) => {
+      console.error('Confirmation email failed:', err);
+    });
 
     return NextResponse.json(
       {

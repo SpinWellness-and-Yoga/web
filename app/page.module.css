@@ -113,6 +113,7 @@
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: rgba(21, 27, 71, 0.55);
+  font-weight: 600;
 }
 
 .kicker::before {
@@ -150,15 +151,35 @@
   animation: fadeIn 1s ease-out 0.6s both;
 }
 
+.whatWeDoSection {
+  margin: 1.5rem 0 1.5rem;
+  animation: fadeIn 1s ease-out 0.6s both;
+}
+
+.whatWeDoTitle {
+  margin: 0 0 1rem;
+  font-family: var(--font-display), serif;
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  color: var(--color-midnight);
+  font-weight: 500;
+}
+
+.whatWeDoIntro {
+  margin: 0 0 1.5rem;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: rgba(21, 27, 71, 0.75);
+  max-width: 65ch;
+  font-weight: 400;
+}
+
 .heroHighlights {
   display: grid;
   gap: 1rem;
-  margin: 2rem 0 1.5rem;
   padding: 1.5rem;
   background: rgba(255, 255, 255, 0.6);
   border-radius: 20px;
   border: 1px solid rgba(241, 111, 100, 0.15);
-  animation: fadeIn 1s ease-out 0.8s both;
 }
 
 .highlightItem {
@@ -168,9 +189,13 @@
 }
 
 .highlightIcon {
-  font-size: 1.4rem;
   flex-shrink: 0;
-  line-height: 1;
+  width: 24px;
+  height: 24px;
+  color: var(--color-coral);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .highlightText {
@@ -181,18 +206,7 @@
 
 .highlightText strong {
   color: var(--color-midnight);
-  font-weight: 600;
-}
-
-.heroSubtext {
-  margin: 0;
-  font-size: 1.05rem;
-  line-height: 1.7;
-  color: rgba(21, 27, 71, 0.7);
-  max-width: 58ch;
-  font-weight: 300;
-  font-style: italic;
-  animation: fadeIn 1s ease-out 1s both;
+  font-weight: 500;
 }
 
 .heroAccent {
@@ -205,6 +219,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 1rem;
   margin-top: 0.5rem;
 }
@@ -263,15 +278,6 @@
   height: 10px;
   border-radius: 50%;
   background: rgba(241, 111, 100, 0.6);
-}
-
-.heroCard {
-  display: flex;
-  justify-content: center;
-  max-width: 420px;
-  width: 100%;
-  margin: 0 auto;
-  animation: fadeIn 1s ease-out 1s both;
 }
 
 .waitlistPane {
@@ -503,20 +509,23 @@
   background: #fff0eb;
   border: 1px solid rgba(241, 111, 100, 0.2);
   border-radius: 18px;
-  padding: 1.4rem;
-  display: grid;
-  gap: 0.35rem;
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
   color: var(--color-midnight);
 }
 
 .statValue {
   font-family: var(--font-display), serif;
   font-size: 2rem;
+  line-height: 1.1;
 }
 
 .statLabel {
   font-size: 0.95rem;
   color: rgba(21, 27, 71, 0.65);
+  line-height: 1.3;
 }
 
 .ctaSection {
@@ -540,6 +549,26 @@
   margin: 0 auto 1.75rem;
   max-width: 60ch;
   color: rgba(21, 27, 71, 0.7);
+}
+
+.ctaNote {
+  margin: 1.5rem auto 0;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-midnight);
+}
+
+.waitlistCardWrapper {
+  margin: 2.5rem auto 0;
+  display: flex;
+  justify-content: center;
+  max-width: 480px;
+  width: 100%;
+}
+
+.waitlistCardWrapper > * {
+  width: 100%;
 }
 
 .ctaButton {
