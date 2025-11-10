@@ -22,6 +22,7 @@ function getEnvFromRequest(request: Request): any {
 export async function POST(request: Request) {
   try {
     const env = getEnvFromRequest(request);
+    console.log('[waitlist POST] Env object:', env ? { keys: Object.keys(env), hasResendKey: !!env.RESEND_API_KEY, hasAdminEmail: !!env.ADMIN_EMAIL } : 'no env');
     const contentType = request.headers.get("content-type") ?? "";
 
     let name = "";
@@ -62,9 +63,10 @@ export async function POST(request: Request) {
     };
 
     // send emails (non-blocking)
+    console.log('[waitlist POST] Starting email sends...');
     // notify admin
     sendWaitlistNotification(entry, env).catch((err) => {
-      console.error('Email notification failed:', err);
+      console.error('[waitlist POST] Email notification failed:', err);
     });
     
     // send confirmation to user
@@ -73,7 +75,7 @@ export async function POST(request: Request) {
       email: entry.email,
       company: entry.company,
     }, env).catch((err) => {
-      console.error('Confirmation email failed:', err);
+      console.error('[waitlist POST] Confirmation email failed:', err);
     });
 
     return NextResponse.json(

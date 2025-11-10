@@ -22,6 +22,7 @@ function getEnvFromRequest(request: Request): any {
 export async function POST(request: Request) {
   try {
     const env = getEnvFromRequest(request);
+    console.log('[contact POST] Env object:', env ? { keys: Object.keys(env), hasResendKey: !!env.RESEND_API_KEY, hasAdminEmail: !!env.ADMIN_EMAIL } : 'no env');
     const body = await request.json();
     const name = body.name?.toString().trim() ?? "";
     const email = body.email?.toString().trim() ?? "";
@@ -35,14 +36,15 @@ export async function POST(request: Request) {
     }
 
     // send emails (non-blocking)
+    console.log('[contact POST] Starting email sends...');
     // notify admin
     sendContactNotification({ name, email, message }, env).catch((err) => {
-      console.error('Contact notification failed:', err);
+      console.error('[contact POST] Contact notification failed:', err);
     });
     
     // send confirmation to user
     sendContactConfirmation({ name, email }, env).catch((err) => {
-      console.error('Contact confirmation failed:', err);
+      console.error('[contact POST] Contact confirmation failed:', err);
     });
 
     return NextResponse.json(
