@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { addEntry, getAllEntries, type WaitlistEntry } from "@/lib/waitlist-storage";
 import { sendWaitlistNotification, sendWaitlistConfirmation } from "@/lib/email";
 
 export async function POST(request: Request) {
@@ -35,28 +34,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const id = `entry_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-
-    const entry: WaitlistEntry = {
-      id,
+    const entry = {
       full_name: name,
       email,
       company,
       team_size: teamSize,
       priority,
     };
-
-    try {
-      await addEntry(entry);
-    } catch (error: any) {
-      if (error.message === 'Email already on waitlist') {
-        return NextResponse.json(
-          { success: false, error: "Email already on waitlist" },
-          { status: 409 }
-        );
-      }
-      throw error;
-    }
 
     // send emails (non-blocking)
     // notify admin
@@ -77,35 +61,11 @@ export async function POST(request: Request) {
       {
         success: true,
         message: "Added to waitlist successfully",
-        entry: {
-          id: entry.id,
-          full_name: entry.full_name,
-          company: entry.company,
-          team_size: entry.team_size,
-        },
       },
       { status: 201 }
     );
   } catch (error) {
     console.error("Waitlist API error:", error);
     return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
-  }
-}
-
-export async function GET(request: Request) {
-  try {
-    const entries = await getAllEntries();
-
-    return NextResponse.json({
-      success: true,
-      total: entries.length,
-      entries,
-    });
-  } catch (error) {
-    console.error("Waitlist GET error:", error);
-    return NextResponse.json(
-      { success: false, error: "Internal Server Error" },
-      { status: 500 }
-    );
   }
 }
