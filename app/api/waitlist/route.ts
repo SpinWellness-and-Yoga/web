@@ -1,8 +1,27 @@
 import { NextResponse } from "next/server";
 import { sendWaitlistNotification, sendWaitlistConfirmation } from "@/lib/email";
 
+function getEnvFromRequest(request: Request): any {
+  const req = request as any;
+  
+  // opennext cloudflare passes env through various locations
+  if (req.env) return req.env;
+  if (req.ctx?.env) return req.ctx.env;
+  if (req.cloudflare?.env) return req.cloudflare.env;
+  if (req.runtime?.env) return req.runtime.env;
+  
+  // cloudflare workers global
+  if (typeof globalThis !== 'undefined') {
+    const g = globalThis as any;
+    if (g.env) return g.env;
+  }
+  
+  return undefined;
+}
+
 export async function POST(request: Request) {
   try {
+    const env = getEnvFromRequest(request);
     const contentType = request.headers.get("content-type") ?? "";
 
     let name = "";
@@ -44,7 +63,7 @@ export async function POST(request: Request) {
 
     // send emails (non-blocking)
     // notify admin
-    sendWaitlistNotification(entry).catch((err) => {
+    sendWaitlistNotification(entry, env).catch((err) => {
       console.error('Email notification failed:', err);
     });
     
@@ -53,7 +72,7 @@ export async function POST(request: Request) {
       full_name: entry.full_name,
       email: entry.email,
       company: entry.company,
-    }).catch((err) => {
+    }, env).catch((err) => {
       console.error('Confirmation email failed:', err);
     });
 

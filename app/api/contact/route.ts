@@ -1,8 +1,27 @@
 import { NextResponse } from "next/server";
 import { sendContactNotification, sendContactConfirmation } from "@/lib/email";
 
+function getEnvFromRequest(request: Request): any {
+  const req = request as any;
+  
+  // opennext cloudflare passes env through various locations
+  if (req.env) return req.env;
+  if (req.ctx?.env) return req.ctx.env;
+  if (req.cloudflare?.env) return req.cloudflare.env;
+  if (req.runtime?.env) return req.runtime.env;
+  
+  // cloudflare workers global
+  if (typeof globalThis !== 'undefined') {
+    const g = globalThis as any;
+    if (g.env) return g.env;
+  }
+  
+  return undefined;
+}
+
 export async function POST(request: Request) {
   try {
+    const env = getEnvFromRequest(request);
     const body = await request.json();
     const name = body.name?.toString().trim() ?? "";
     const email = body.email?.toString().trim() ?? "";
@@ -17,12 +36,12 @@ export async function POST(request: Request) {
 
     // send emails (non-blocking)
     // notify admin
-    sendContactNotification({ name, email, message }).catch((err) => {
+    sendContactNotification({ name, email, message }, env).catch((err) => {
       console.error('Contact notification failed:', err);
     });
     
     // send confirmation to user
-    sendContactConfirmation({ name, email }).catch((err) => {
+    sendContactConfirmation({ name, email }, env).catch((err) => {
       console.error('Contact confirmation failed:', err);
     });
 

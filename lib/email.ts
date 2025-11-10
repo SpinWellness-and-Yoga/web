@@ -1,12 +1,34 @@
+function getEnvVar(key: string, env?: any): string | undefined {
+  // cloudflare workers - env passed from request context
+  if (env) {
+    if (env[key]) return env[key];
+    if (env.env?.[key]) return env.env[key];
+  }
+  
+  // node.js / local development
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[key];
+  }
+  
+  // cloudflare workers global
+  if (typeof globalThis !== 'undefined') {
+    const g = globalThis as any;
+    if (g.env?.[key]) return g.env[key];
+    if (g[key]) return g[key];
+  }
+  
+  return undefined;
+}
+
 export async function sendWaitlistNotification(entry: {
   full_name: string;
   email: string;
   company: string;
   team_size?: string;
   priority?: string;
-}): Promise<void> {
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@spinwellness.org';
+}, env?: any): Promise<void> {
+  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
+  const adminEmail = getEnvVar('ADMIN_EMAIL', env);
 
   if (!resendApiKey) {
     console.warn('RESEND_API_KEY not set, skipping email notification');
@@ -53,8 +75,8 @@ export async function sendWaitlistConfirmation(entry: {
   full_name: string;
   email: string;
   company: string;
-}): Promise<void> {
-  const resendApiKey = process.env.RESEND_API_KEY;
+}, env?: any): Promise<void> {
+  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
 
   if (!resendApiKey) {
     console.warn('RESEND_API_KEY not set, skipping confirmation email');
@@ -135,9 +157,9 @@ export async function sendContactNotification(entry: {
   name: string;
   email: string;
   message: string;
-}): Promise<void> {
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@spinwellness.org';
+}, env?: any): Promise<void> {
+  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
+  const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellness.org';
 
   if (!resendApiKey) {
     console.warn('RESEND_API_KEY not set, skipping contact notification');
@@ -181,8 +203,8 @@ export async function sendContactNotification(entry: {
 export async function sendContactConfirmation(entry: {
   name: string;
   email: string;
-}): Promise<void> {
-  const resendApiKey = process.env.RESEND_API_KEY;
+}, env?: any): Promise<void> {
+  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
 
   if (!resendApiKey) {
     console.warn('RESEND_API_KEY not set, skipping contact confirmation');
