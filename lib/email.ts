@@ -35,9 +35,13 @@ export async function sendWaitlistNotification(entry: {
   team_size?: string;
   priority?: string;
 }, env?: any): Promise<void> {
-  // temporary hardcoded values for testing
-  const resendApiKey = 're_Yzg18yhQ_A5DEpPBcu54b56fRmaUQrPWY';
-  const adminEmail = 'admin@spinwellness.org';
+  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
+  const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellness.org';
+
+  if (!resendApiKey) {
+    console.error('[sendWaitlistNotification] RESEND_API_KEY not found');
+    return;
+  }
 
   const emailBody = `
     <h2>New Waitlist Entry</h2>
@@ -68,7 +72,8 @@ export async function sendWaitlistNotification(entry: {
     });
 
     const responseText = await response.text();
-    console.log('[sendWaitlistNotification] Resend response:', response.status, responseText);
+    console.log('[sendWaitlistNotification] Resend response status:', response.status);
+    console.log('[sendWaitlistNotification] Resend response body:', responseText);
 
     if (!response.ok) {
       let errorData;
@@ -77,10 +82,16 @@ export async function sendWaitlistNotification(entry: {
       } catch {
         errorData = { raw: responseText };
       }
-      console.error('[sendWaitlistNotification] Resend API error:', errorData);
+      console.error('[sendWaitlistNotification] Resend API error:', JSON.stringify(errorData, null, 2));
+    } else {
+      console.log('[sendWaitlistNotification] Email sent successfully');
     }
   } catch (error) {
     console.error('[sendWaitlistNotification] Failed to send email:', error);
+    console.error('[sendWaitlistNotification] Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
   }
 }
 
@@ -89,8 +100,12 @@ export async function sendWaitlistConfirmation(entry: {
   email: string;
   company: string;
 }, env?: any): Promise<void> {
-  // temporary hardcoded values for testing
-  const resendApiKey = 're_Yzg18yhQ_A5DEpPBcu54b56fRmaUQrPWY';
+  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
+
+  if (!resendApiKey) {
+    console.error('[sendWaitlistConfirmation] RESEND_API_KEY not found');
+    return;
+  }
 
   const logoUrl = 'https://spinwellness.org/logos/SWAY-Alt-logo-PNG.png';
 
@@ -176,9 +191,13 @@ export async function sendContactNotification(entry: {
   email: string;
   message: string;
 }, env?: any): Promise<void> {
-  // temporary hardcoded values for testing
-  const resendApiKey = 're_Yzg18yhQ_A5DEpPBcu54b56fRmaUQrPWY';
-  const adminEmail = 'admin@spinwellness.org';
+  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
+  const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellness.org';
+
+  if (!resendApiKey) {
+    console.error('[sendContactNotification] RESEND_API_KEY not found');
+    return;
+  }
 
   const emailBody = `
     <h2>New Contact Form Submission</h2>
@@ -228,8 +247,12 @@ export async function sendContactConfirmation(entry: {
   name: string;
   email: string;
 }, env?: any): Promise<void> {
-  // temporary hardcoded values for testing
-  const resendApiKey = 're_Yzg18yhQ_A5DEpPBcu54b56fRmaUQrPWY';
+  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
+
+  if (!resendApiKey) {
+    console.error('[sendContactConfirmation] RESEND_API_KEY not found');
+    return;
+  }
 
   const logoUrl = 'https://spinwellness.org/logos/SWAY-Alt-logo-PNG.png';
 
