@@ -38,7 +38,7 @@ export async function sendWaitlistNotification(entry: {
   priority?: string;
 }, env?: any): Promise<void> {
   const resendApiKey = getEnvVar('RESEND_API_KEY', env);
-  const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellness.org';
+  const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellnessandyoga.com';
 
   if (!resendApiKey) {
     console.error('[sendWaitlistNotification] RESEND_API_KEY not found');
@@ -57,7 +57,7 @@ export async function sendWaitlistNotification(entry: {
   `;
 
   const emailPayload = {
-    from: 'Spinwellness Waitlist <admin@spinwellness.org>',
+    from: 'Spinwellness Waitlist <admin@spinwellnessandyoga.com>',
     to: [adminEmail],
     subject: `New Waitlist Entry: ${entry.full_name} from ${entry.company}`,
     html: emailBody,
@@ -102,7 +102,7 @@ export async function sendWaitlistConfirmation(entry: {
     return;
   }
 
-  const logoUrl = 'https://spinwellness.org/logos/SWAY-Alt-logo-PNG.png';
+  const logoUrl = 'https://spinwellnessandyoga.com/logos/SWAY-Alt-logo-PNG.png';
 
   const emailBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -130,7 +130,7 @@ export async function sendWaitlistConfirmation(entry: {
       </ul>
       
       <p style="font-size: 16px; color: #151b47;">
-        We'll be in touch soon with updates and early access opportunities. In the meantime, if you have any questions, please reach out to us through our <a href="https://spinwellness.org/contact" style="color: #f16f64; text-decoration: underline;">contact form</a>.
+        We'll be in touch soon with updates and early access opportunities. In the meantime, if you have any questions, please reach out to us through our <a href="https://spinwellnessandyoga.com/contact" style="color: #f16f64; text-decoration: underline;">contact form</a>.
       </p>
       
       <p style="font-size: 16px; color: #151b47;">
@@ -148,7 +148,7 @@ export async function sendWaitlistConfirmation(entry: {
   `;
 
   const emailPayload = {
-    from: 'Ajoke Ibrahim <admin@spinwellness.org>',
+    from: 'Ajoke Ibrahim <admin@spinwellnessandyoga.com>',
     to: [entry.email],
     subject: 'Welcome to the Spinwellness Waitlist',
     html: emailBody,
@@ -186,7 +186,7 @@ export async function sendContactNotification(entry: {
   message: string;
 }, env?: any): Promise<void> {
   const resendApiKey = getEnvVar('RESEND_API_KEY', env);
-  const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellness.org';
+  const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellnessandyoga.com';
 
   if (!resendApiKey) {
     console.error('[sendContactNotification] RESEND_API_KEY not found');
@@ -204,7 +204,7 @@ export async function sendContactNotification(entry: {
   `;
 
   const emailPayload = {
-    from: 'Spinwellness Contact Form <admin@spinwellness.org>',
+    from: 'Spinwellness Contact Form <admin@spinwellnessandyoga.com>',
     to: [adminEmail],
     subject: `New Contact: ${entry.name}`,
     html: emailBody,
@@ -247,7 +247,7 @@ export async function sendContactConfirmation(entry: {
     return;
   }
 
-  const logoUrl = 'https://spinwellness.org/logos/SWAY-Alt-logo-PNG.png';
+  const logoUrl = 'https://spinwellnessandyoga.com/logos/SWAY-Alt-logo-PNG.png';
 
   const emailBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -264,7 +264,7 @@ export async function sendContactConfirmation(entry: {
       </p>
       
       <p style="font-size: 16px; color: #151b47;">
-        In the meantime, feel free to explore our <a href="https://spinwellness.org" style="color: #f16f64; text-decoration: underline;">website</a> to learn more about our corporate wellness programs.
+        In the meantime, feel free to explore our <a href="https://spinwellnessandyoga.com" style="color: #f16f64; text-decoration: underline;">website</a> to learn more about our corporate wellness programs.
       </p>
       
       <p style="font-size: 16px; color: #151b47;">
@@ -282,7 +282,7 @@ export async function sendContactConfirmation(entry: {
   `;
 
   const emailPayload = {
-    from: 'Ajoke Ibrahim <ajoke@spinwellness.org>',
+    from: 'Ajoke Ibrahim <ajoke@spinwellnessandyoga.com>',
     to: [entry.email],
     subject: 'We received your message',
     html: emailBody,
