@@ -75,6 +75,7 @@ export default function ContactPage() {
           <nav className={styles.navLinks} aria-label="Primary">
             <Link href="/#services">Services</Link>
             <Link href="/#why">Why Us</Link>
+            <Link href="/events">Events</Link>
             <Link href="/#waitlist">Waitlist</Link>
             <Link href="/contact">Contact</Link>
           </nav>
