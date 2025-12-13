@@ -19,9 +19,10 @@ function getEnvFromRequest(request: Request): any {
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const event = await getEventById(params.id, request);
     
     if (!event) {
@@ -45,4 +46,5 @@ export async function GET(
     );
   }
 }
+
 

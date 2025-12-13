@@ -41,3 +41,4 @@ INSERT OR IGNORE INTO events (
   '["Ibadan"]'
 );
 
+

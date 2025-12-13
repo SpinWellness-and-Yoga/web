@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
 interface Event {
@@ -17,16 +17,7 @@ export default function EventsPopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
 
-  useEffect(() => {
-    const hasSeenPopup = localStorage.getItem('events-popup-seen');
-    if (!hasSeenPopup) {
-      setTimeout(() => {
-        loadEvents();
-      }, 2000);
-    }
-  }, []);
-
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
       const response = await fetch('/api/events');
       if (response.ok) {
@@ -39,7 +30,16 @@ export default function EventsPopup() {
     } catch (err) {
       console.log('failed to load events:', err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const hasSeenPopup = localStorage.getItem('events-popup-seen');
+    if (!hasSeenPopup) {
+      setTimeout(() => {
+        loadEvents();
+      }, 2000);
+    }
+  }, [loadEvents]);
 
   const handleClose = () => {
     setIsOpen(false);

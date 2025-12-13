@@ -36,3 +36,4 @@ wrangler d1 execute spinwellness_web --local --file=scripts/insert-events-d1.sql
 - events API routes are at `/api/events` and `/api/events/[id]`
 - pages automatically fetch from D1 via API routes
 
+
