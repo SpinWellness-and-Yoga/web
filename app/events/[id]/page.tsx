@@ -228,8 +228,8 @@ export default function EventDetailPage() {
             <Image
               src="/logos/SWAY-Primary-logo-(iteration).png"
               alt="Spinwellness & Yoga"
-              width={300}
-              height={100}
+              width={600}
+              height={200}
               priority
             />
           </Link>

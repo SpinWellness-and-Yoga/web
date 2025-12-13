@@ -58,8 +58,8 @@ export default function Home() {
             <Image
               src="/logos/SWAY-Primary-logo-(iteration).png"
               alt="Spinwellness & Yoga primary logo"
-              width={450}
-              height={150}
+              width={600}
+              height={200}
               priority
             />
           </a>
@@ -197,8 +197,8 @@ export default function Home() {
             <Image
               src="/logos/SWAY-Primary-logo-(iteration).png"
               alt="Spinwellness & Yoga primary logo"
-              width={180}
-              height={250}
+              width={280}
+              height={380}
             />
             <p>Spinwellness & Yoga — wellness, therapy, and culture design for modern teams.</p>
           </div>
