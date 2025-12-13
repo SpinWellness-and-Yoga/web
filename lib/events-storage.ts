@@ -47,6 +47,23 @@ export async function getAllEvents(request?: Request): Promise<Event[]> {
   try {
     console.log('[events-storage] Querying events from supabase...');
     
+    // first try without is_active filter to see all events
+    const allEventsResult = await supabase
+      .from('events')
+      .select('*')
+      .order('start_date', { ascending: true });
+    
+    console.log('[events-storage] All events query result:', {
+      dataCount: allEventsResult.data?.length || 0,
+      error: allEventsResult.error ? {
+        code: allEventsResult.error.code,
+        message: allEventsResult.error.message,
+        details: allEventsResult.error.details,
+        hint: allEventsResult.error.hint,
+      } : null,
+    });
+    
+    // now query with is_active filter
     const { data, error } = await supabase
       .from('events')
       .select('*')
@@ -58,6 +75,27 @@ export async function getAllEvents(request?: Request): Promise<Event[]> {
       console.error('[events-storage] Error code:', error.code);
       console.error('[events-storage] Error message:', error.message);
       console.error('[events-storage] Error details:', error.details);
+      console.error('[events-storage] Error hint:', error.hint);
+      
+      // if RLS error, try without filter
+      if (error.code === 'PGRST301' || error.message?.includes('permission') || error.message?.includes('policy')) {
+        console.log('[events-storage] RLS error detected, trying without is_active filter...');
+        const fallbackResult = await supabase
+          .from('events')
+          .select('*')
+          .order('start_date', { ascending: true });
+        
+        if (fallbackResult.data && fallbackResult.data.length > 0) {
+          console.log('[events-storage] Found', fallbackResult.data.length, 'events (without filter)');
+          return fallbackResult.data
+            .filter(e => e.is_active === true)
+            .map(event => ({
+              ...event,
+              is_active: event.is_active ? 1 : 0,
+            })) as Event[];
+        }
+      }
+      
       return [];
     }
     
@@ -68,6 +106,10 @@ export async function getAllEvents(request?: Request): Promise<Event[]> {
     
     if (data.length === 0) {
       console.log('[events-storage] No active events found in database');
+      console.log('[events-storage] Total events in table:', allEventsResult.data?.length || 0);
+      if (allEventsResult.data && allEventsResult.data.length > 0) {
+        console.log('[events-storage] Sample event is_active values:', allEventsResult.data.map(e => ({ id: e.id, is_active: e.is_active })));
+      }
       return [];
     }
     
