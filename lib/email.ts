@@ -82,7 +82,6 @@ export async function sendWaitlistConfirmation(entry: {
       <div style="text-align: center; margin-bottom: 30px;">
         <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 350px; width: 100%; height: auto; margin-bottom: 20px;" />
         <h1 style="color: #151b47; font-size: 28px; margin: 0 0 10px;">Welcome to the Waitlist!</h1>
-        <p style="color: #f16f64; font-size: 18px; margin: 0; font-style: italic;">...the OM of bliss</p>
       </div>
       
       <div style="background: #fef9f5; padding: 30px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #f16f64;">
@@ -174,7 +173,6 @@ export async function sendContactConfirmation(entry: {
       <div style="text-align: center; margin-bottom: 30px;">
         <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 350px; width: 100%; height: auto; margin-bottom: 20px;" />
         <h1 style="color: #151b47; font-size: 28px; margin: 0 0 10px;">Thank you for reaching out!</h1>
-        <p style="color: #f16f64; font-size: 18px; margin: 0; font-style: italic;">...the OM of bliss</p>
       </div>
       
       <div style="background: #fef9f5; padding: 30px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #f16f64;">
@@ -271,13 +269,11 @@ export async function sendEventRegistrationNotification(entry: {
     const resend = new Resend(resendApiKey);
     const result = await resend.emails.send(emailPayload);
     if (result.error) {
-      // log error but don't throw - registration should still succeed
       console.log('[sendEventRegistrationNotification] Email sending failed (non-blocking):', result.error.message || 'domain not verified');
     } else {
       console.log('[sendEventRegistrationNotification] Notification email sent successfully');
     }
   } catch (error) {
-    // log error but don't throw - registration should still succeed
     console.log('[sendEventRegistrationNotification] Email sending failed (non-blocking):', error instanceof Error ? error.message : 'unknown error');
   }
 }
@@ -317,7 +313,6 @@ export async function sendEventRegistrationConfirmation(entry: {
       <div style="text-align: center; margin-bottom: 30px;">
         <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 350px; width: 100%; height: auto; margin-bottom: 20px;" />
         <h1 style="color: #151b47; font-size: 28px; margin: 0 0 10px;">You&apos;re Registered!</h1>
-        <p style="color: #f16f64; font-size: 18px; margin: 0; font-style: italic;">...the OM of bliss</p>
       </div>
       
       <div style="background: linear-gradient(135deg, #f16f64 0%, #e85a50 100%); padding: 30px; border-radius: 12px; margin-bottom: 30px; color: white; text-align: center;">
@@ -332,7 +327,7 @@ export async function sendEventRegistrationConfirmation(entry: {
         <p style="margin: 0 0 15px; font-size: 16px;">Thank you for registering for <strong>${escapeHtml(entry.event_name)}</strong>! We&apos;re excited to have you join us.</p>
         <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #f16f64;">
           <p style="margin: 0 0 10px; font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 1px;">Your Ticket Number</p>
-          <p style="margin: 0; font-size: 24px; font-weight: bold; color: #f16f64; letter-spacing: 2px;">${entry.ticket_number}</p>
+          <p style="margin: 0; font-size: 24px; font-weight: bold; color: #f16f64; letter-spacing: 2px;">${escapeHtml(entry.ticket_number)}</p>
         </div>
         <p style="margin: 15px 0; font-size: 16px;">Please save this email and bring your ticket number with you to the event.</p>
         <p style="margin: 0; font-size: 16px;">We look forward to seeing you there!</p>
@@ -355,13 +350,92 @@ export async function sendEventRegistrationConfirmation(entry: {
     const resend = new Resend(resendApiKey);
     const result = await resend.emails.send(emailPayload);
     if (result.error) {
-      // log error but don't throw - registration should still succeed
       console.log('[sendEventRegistrationConfirmation] Email sending failed (non-blocking):', result.error.message || 'domain not verified');
     } else {
       console.log('[sendEventRegistrationConfirmation] Confirmation email sent successfully');
     }
   } catch (error) {
-    // log error but don't throw - registration should still succeed
     console.log('[sendEventRegistrationConfirmation] Email sending failed (non-blocking):', error instanceof Error ? error.message : 'unknown error');
+  }
+}
+
+export async function sendEventReminder(entry: {
+  event_name: string;
+  event_date: string;
+  event_location: string;
+  event_venue?: string;
+  name: string;
+  email: string;
+  ticket_number: string;
+  location_preference: string;
+}, env?: any): Promise<void> {
+  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
+
+  if (!resendApiKey) {
+    console.error('[sendEventReminder] RESEND_API_KEY not found');
+    return;
+  }
+
+  const logoUrl = 'https://spinwellnessandyoga.com/logos/SWAY-Primary-logo-(iteration).png';
+
+  const escapeHtml = (text: string) => {
+    const map: { [key: string]: string } = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;',
+    };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
+  };
+
+  const emailBody = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 350px; width: 100%; height: auto; margin-bottom: 20px;" />
+        <h1 style="color: #151b47; font-size: 28px; margin: 0 0 10px;">Event Reminder</h1>
+      </div>
+      
+      <div style="background: linear-gradient(135deg, #f16f64 0%, #e85a50 100%); padding: 30px; border-radius: 12px; margin-bottom: 30px; color: white; text-align: center;">
+        <h2 style="color: white; margin: 0 0 15px; font-size: 24px;">${escapeHtml(entry.event_name)}</h2>
+        <p style="color: rgba(255, 255, 255, 0.95); margin: 5px 0; font-size: 16px;"><strong>Date:</strong> ${escapeHtml(entry.event_date)}</p>
+        <p style="color: rgba(255, 255, 255, 0.95); margin: 5px 0; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.event_location)}</p>
+        ${entry.event_venue ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 5px 0; font-size: 16px;"><strong>Venue:</strong> ${escapeHtml(entry.event_venue)}</p>` : ''}
+      </div>
+      
+      <div style="background: #fef9f5; padding: 30px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #f16f64;">
+        <p style="margin: 0 0 15px; font-size: 16px;">Hi ${escapeHtml(entry.name)},</p>
+        <p style="margin: 0 0 15px; font-size: 16px;">This is a friendly reminder that <strong>${escapeHtml(entry.event_name)}</strong> is happening in 2 days!</p>
+        <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #f16f64;">
+          <p style="margin: 0 0 10px; font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 1px;">Your Ticket Number</p>
+          <p style="margin: 0; font-size: 24px; font-weight: bold; color: #f16f64; letter-spacing: 2px;">${escapeHtml(entry.ticket_number)}</p>
+        </div>
+        <p style="margin: 15px 0; font-size: 16px;">Please remember to bring your ticket number with you. We can&apos;t wait to see you there!</p>
+        ${entry.location_preference ? `<p style="margin: 0; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.location_preference)}</p>` : ''}
+      </div>
+      
+      <div style="text-align: center; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+        <p style="color: #666; font-size: 14px; margin: 0;">Spinwellness & Yoga | Transform Employee Wellness</p>
+      </div>
+    </div>
+  `;
+
+  const emailPayload = {
+    from: 'Spinwellness & Yoga <admin@spinwellnessandyoga.com>',
+    to: [entry.email],
+    subject: `Reminder: ${entry.event_name} is in 2 days!`,
+    html: emailBody,
+  };
+
+  try {
+    const resend = new Resend(resendApiKey);
+    const result = await resend.emails.send(emailPayload);
+    if (result.error) {
+      console.log('[sendEventReminder] Email sending failed:', result.error.message || 'domain not verified');
+    } else {
+      console.log('[sendEventReminder] Reminder email sent successfully');
+    }
+  } catch (error) {
+    console.log('[sendEventReminder] Email sending failed:', error instanceof Error ? error.message : 'unknown error');
   }
 }
