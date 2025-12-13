@@ -65,10 +65,10 @@ export default function ContactPage() {
         <div className={styles.navInner}>
           <Link href="/" className={styles.brand}>
             <Image
-              src="/logos/SWAY-Alt-logo-PNG.png"
+              src="/logos/SWAY-Primary-logo-(iteration).png"
               alt="Spinwellness & Yoga"
-              width={300}
-              height={100}
+              width={600}
+              height={200}
               priority
             />
           </Link>
@@ -153,10 +153,10 @@ export default function ContactPage() {
         <div className={styles.footerInner}>
           <div className={styles.footerBrand}>
             <Image
-              src="/logos/SWAY-Alt-logo-PNG.png"
-              alt="Spinwellness logomark"
-              width={180}
-              height={250}
+              src="/logos/SWAY-Primary-logo-(iteration).png"
+              alt="Spinwellness & Yoga primary logo"
+              width={280}
+              height={380}
             />
             <p>Spinwellness & Yoga — wellness, therapy, and culture design for modern teams.</p>
           </div>

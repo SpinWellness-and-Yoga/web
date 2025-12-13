@@ -19,6 +19,7 @@ interface Event {
   is_active: number;
   locations?: string;
   registrations?: any[];
+  registration_count?: number;
 }
 
 export default function EventsPage() {
@@ -66,10 +67,10 @@ export default function EventsPage() {
         <div className={styles.navInner}>
           <Link href="/" className={styles.brand}>
             <Image
-              src="/logos/SWAY-Alt-logo-PNG.png"
+              src="/logos/SWAY-Primary-logo-(iteration).png"
               alt="Spinwellness & Yoga"
-              width={300}
-              height={100}
+              width={600}
+              height={200}
               priority
             />
           </Link>
@@ -119,9 +120,15 @@ export default function EventsPage() {
                   <div style={{ fontSize: '0.9rem', color: '#322216', marginBottom: '1rem' }}>
                     <p><strong>Date:</strong> {formatDate(event.start_date)}</p>
                     <p><strong>Location:</strong> {event.location}</p>
-                    {event.capacity > 0 && (
-                      <p><strong>Capacity:</strong> {event.capacity} spots</p>
-                    )}
+                    {event.capacity > 0 && (() => {
+                      const registeredCount = event.registration_count ?? event.registrations?.length ?? 0;
+                      const spotsRemaining = event.capacity - registeredCount;
+                      return (
+                        <p>
+                          <strong>Spots Available:</strong> {spotsRemaining} of {event.capacity} remaining
+                        </p>
+                      );
+                    })()}
                   </div>
                   <p style={{ color: '#322216', marginBottom: '1.5rem', lineHeight: '1.6' }}>
                     {event.description.substring(0, 150)}...

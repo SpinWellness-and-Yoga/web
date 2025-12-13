@@ -38,32 +38,11 @@ export async function getAllEvents(request?: Request): Promise<Event[]> {
   const supabase = getSupabaseClient();
   
   if (!supabase) {
-    console.error('[events-storage] Supabase not configured - check environment variables');
-    console.error('[events-storage] NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'set' : 'missing');
-    console.error('[events-storage] SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'set' : 'missing');
+    console.error('[events-storage] Supabase not configured');
     return [];
   }
   
   try {
-    console.log('[events-storage] Querying events from supabase...');
-    
-    // first try without is_active filter to see all events
-    const allEventsResult = await supabase
-      .from('events')
-      .select('*')
-      .order('start_date', { ascending: true });
-    
-    console.log('[events-storage] All events query result:', {
-      dataCount: allEventsResult.data?.length || 0,
-      error: allEventsResult.error ? {
-        code: allEventsResult.error.code,
-        message: allEventsResult.error.message,
-        details: allEventsResult.error.details,
-        hint: allEventsResult.error.hint,
-      } : null,
-    });
-    
-    // now query with is_active filter
     const { data, error } = await supabase
       .from('events')
       .select('*')
@@ -71,22 +50,15 @@ export async function getAllEvents(request?: Request): Promise<Event[]> {
       .order('start_date', { ascending: true });
     
     if (error) {
-      console.error('[events-storage] Supabase error:', error);
-      console.error('[events-storage] Error code:', error.code);
-      console.error('[events-storage] Error message:', error.message);
-      console.error('[events-storage] Error details:', error.details);
-      console.error('[events-storage] Error hint:', error.hint);
+      console.error('[events-storage] Supabase error:', error.code);
       
-      // if RLS error, try without filter
       if (error.code === 'PGRST301' || error.message?.includes('permission') || error.message?.includes('policy')) {
-        console.log('[events-storage] RLS error detected, trying without is_active filter...');
         const fallbackResult = await supabase
           .from('events')
           .select('*')
           .order('start_date', { ascending: true });
         
         if (fallbackResult.data && fallbackResult.data.length > 0) {
-          console.log('[events-storage] Found', fallbackResult.data.length, 'events (without filter)');
           return fallbackResult.data
             .filter(e => e.is_active === true)
             .map(event => ({
@@ -99,31 +71,15 @@ export async function getAllEvents(request?: Request): Promise<Event[]> {
       return [];
     }
     
-    if (!data) {
-      console.log('[events-storage] No data returned from supabase');
+    if (!data || data.length === 0) {
       return [];
     }
-    
-    if (data.length === 0) {
-      console.log('[events-storage] No active events found in database');
-      console.log('[events-storage] Total events in table:', allEventsResult.data?.length || 0);
-      if (allEventsResult.data && allEventsResult.data.length > 0) {
-        console.log('[events-storage] Sample event is_active values:', allEventsResult.data.map(e => ({ id: e.id, is_active: e.is_active })));
-      }
-      return [];
-    }
-    
-    console.log('[events-storage] Found', data.length, 'events from supabase');
     return data.map(event => ({
       ...event,
       is_active: event.is_active ? 1 : 0,
     })) as Event[];
   } catch (error) {
-    console.error('[events-storage] Exception fetching from supabase:', error);
-    if (error instanceof Error) {
-      console.error('[events-storage] Error message:', error.message);
-      console.error('[events-storage] Error stack:', error.stack);
-    }
+    console.error('[events-storage] Exception fetching events');
     return [];
   }
 }
@@ -193,8 +149,35 @@ export async function getEventRegistrations(eventId: string, request?: Request):
   }
 }
 
+export async function checkDuplicateRegistration(eventId: string, email: string, request?: Request): Promise<boolean> {
+  const supabase = getSupabaseClient();
+  
+  if (!supabase) {
+    return false;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('event_registrations')
+      .select('id')
+      .eq('event_id', eventId)
+      .eq('email', email.toLowerCase().trim())
+      .limit(1);
+    
+    if (error) {
+      console.error('[events] Error checking duplicate:', error);
+      return false;
+    }
+    
+    return (data && data.length > 0);
+  } catch (error) {
+    console.error('[events] Error checking duplicate:', error);
+    return false;
+  }
+}
+
 export async function createEventRegistration(
-  registration: Omit<EventRegistration, 'id' | 'created_at'>,
+  registration: Omit<EventRegistration, 'id' | 'created_at' | 'ticket_number'>,
   request?: Request
 ): Promise<EventRegistration> {
   const supabase = getSupabaseClient();
