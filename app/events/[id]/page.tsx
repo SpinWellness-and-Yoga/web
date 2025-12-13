@@ -133,6 +133,15 @@ export default function EventDetailPage() {
     setSubmitError(null);
     setValidationErrors({});
 
+    const registeredCount = event?.registrations?.length || 0;
+    const spotsRemaining = event && event.capacity > 0 ? event.capacity - registeredCount : null;
+    
+    if (spotsRemaining !== null && spotsRemaining <= 0) {
+      setSubmitError('this event is sold out');
+      setSubmitting(false);
+      return;
+    }
+
     if (!validateForm()) {
       setSubmitting(false);
       return;
@@ -377,28 +386,57 @@ export default function EventDetailPage() {
               borderRadius: '20px', 
               padding: '2rem', 
               boxShadow: '0 4px 20px rgba(21, 27, 71, 0.05)',
-              border: '1px solid rgba(241, 111, 100, 0.1)'
+              border: '1px solid rgba(241, 111, 100, 0.1)',
+              opacity: spotsRemaining !== null && spotsRemaining <= 0 ? 0.6 : 1,
             }}>
               <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', color: '#151B47' }}>register</h2>
-              <p style={{ color: '#322216', marginBottom: '1.5rem', lineHeight: '1.6' }}>
-                ready to join us? click the button below to register for this event.
-              </p>
-              <button
-                onClick={() => setShowForm(true)}
-                style={{
-                  width: '100%',
-                  padding: '1rem',
-                  background: '#F16F64',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '25px',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                }}
-              >
-                register now
-              </button>
+              {spotsRemaining !== null && spotsRemaining <= 0 ? (
+                <>
+                  <p style={{ color: '#f16f64', marginBottom: '1.5rem', lineHeight: '1.6', fontWeight: '600', fontSize: '1.1rem' }}>
+                    this event is sold out. thank you for your interest!
+                  </p>
+                  <button
+                    disabled
+                    style={{
+                      width: '100%',
+                      padding: '1rem',
+                      background: '#DFD9D4',
+                      color: '#999',
+                      border: 'none',
+                      borderRadius: '25px',
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      cursor: 'not-allowed',
+                      opacity: 0.5,
+                      filter: 'blur(0.5px)',
+                    }}
+                  >
+                    sold out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p style={{ color: '#322216', marginBottom: '1.5rem', lineHeight: '1.6' }}>
+                    ready to join us? click the button below to register for this event.
+                  </p>
+                  <button
+                    onClick={() => setShowForm(true)}
+                    style={{
+                      width: '100%',
+                      padding: '1rem',
+                      background: '#F16F64',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '25px',
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    register now
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </section>
