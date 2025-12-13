@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import WaitlistCard from "./_components/WaitlistCard";
+import EventsPopup from "../components/EventsPopup";
 import { BuildingIcon, LightningIcon, HeartIcon, PlantIcon } from "./_components/Icons";
 import styles from "./page.module.css";
 
@@ -50,6 +51,7 @@ const stats = [
 export default function Home() {
   return (
     <div className={styles.shell}>
+      <EventsPopup />
       <header className={styles.navbar}>
         <div className={styles.navInner}>
           <a href="#top" className={styles.brand}>
@@ -65,6 +67,7 @@ export default function Home() {
           <nav className={styles.navLinks} aria-label="Primary">
             <a href="#services">Services</a>
             <a href="#why">Why Us</a>
+            <a href="/events">Events</a>
             <a href="#waitlist">Waitlist</a>
             <a href="/contact">Contact</a>
           </nav>
