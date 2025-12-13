@@ -34,105 +34,91 @@ export interface EventRegistration {
   created_at?: string;
 }
 
-// hardcoded events fallback for vercel deployment (no D1)
-const hardcodedEvents: Event[] = [
-  {
-    id: 'lagos-2026-01-03',
-    name: 'recommit to your wellbeing - lagos edition',
-    description: 'join us for an intimate and exclusive wellness event in lagos. this 2-hour session is designed for young professionals looking to recommit to their wellbeing through a blend of physical practice, mindful engagement, and community building. event flow: 4:15-5:00pm - 45-minute group yoga session focused on mindful movement and breath. 5:00-5:15pm - 15-minute sound therapy session using sound bowls for deep relaxation. 5:15-5:45pm - open conversation on recommitting to your wellbeing, followed by refreshments and socializing. 5:45-6:00pm - clean-up and exit. limited to 20 attendees for an intimate and personalized experience. perfect for those looking to start their wellness journey or deepen an existing practice. this event provides practical tools and knowledge to manage stress and improve mental well-being in a safe, supportive, and welcoming environment.',
-    start_date: '2026-01-03T16:00:00+01:00',
-    end_date: '2026-01-03T18:00:00+01:00',
-    location: 'lagos',
-    venue: 'studio venue',
-    capacity: 20,
-    price: 0,
-    is_active: 1,
-    locations: '["Lagos"]',
-  },
-  {
-    id: 'ibadan-2026-01-10',
-    name: 'recommit to your wellbeing - ibadan edition',
-    description: 'join us for an intimate and exclusive wellness event in ibadan. this 2-hour session is designed for young professionals looking to recommit to their wellbeing through a blend of physical practice, mindful engagement, and community building. event flow: 4:15-5:00pm - 45-minute group yoga session focused on mindful movement and breath. 5:00-5:15pm - 15-minute sound therapy session using sound bowls for deep relaxation. 5:15-5:45pm - open conversation on recommitting to your wellbeing, followed by refreshments and socializing. 5:45-6:00pm - clean-up and exit. limited to 20 attendees for an intimate and personalized experience. perfect for those looking to start their wellness journey or deepen an existing practice. this event provides practical tools and knowledge to manage stress and improve mental well-being in a safe, supportive, and welcoming environment.',
-    start_date: '2026-01-10T16:00:00+01:00',
-    end_date: '2026-01-10T18:00:00+01:00',
-    location: 'ibadan',
-    venue: 'studio venue',
-    capacity: 20,
-    price: 0,
-    is_active: 1,
-    locations: '["Ibadan"]',
-  },
-];
-
 export async function getAllEvents(request?: Request): Promise<Event[]> {
   const supabase = getSupabaseClient();
   
-  if (supabase) {
-    try {
-      console.log('[events-storage] Querying events from supabase...');
-      
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('is_active', true)
-        .order('start_date', { ascending: true });
-      
-      if (error) {
-        console.error('[events-storage] Supabase error:', error);
-        return hardcodedEvents.filter(e => e.is_active === 1);
-      }
-      
-      if (data && data.length > 0) {
-        console.log('[events-storage] Found', data.length, 'events from supabase');
-        return data.map(event => ({
-          ...event,
-          is_active: event.is_active ? 1 : 0,
-        })) as Event[];
-      }
-      
-      console.log('[events-storage] No events found in supabase, using hardcoded events');
-      return hardcodedEvents.filter(e => e.is_active === 1);
-    } catch (error) {
-      console.error('[events-storage] Error fetching from supabase:', error);
-      return hardcodedEvents.filter(e => e.is_active === 1);
-    }
+  if (!supabase) {
+    console.error('[events-storage] Supabase not configured - check environment variables');
+    console.error('[events-storage] NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'set' : 'missing');
+    console.error('[events-storage] SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'set' : 'missing');
+    return [];
   }
   
-  console.log('[events-storage] Supabase not available, using hardcoded events');
-  return hardcodedEvents.filter(e => e.is_active === 1);
+  try {
+    console.log('[events-storage] Querying events from supabase...');
+    
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('is_active', true)
+      .order('start_date', { ascending: true });
+    
+    if (error) {
+      console.error('[events-storage] Supabase error:', error);
+      console.error('[events-storage] Error code:', error.code);
+      console.error('[events-storage] Error message:', error.message);
+      console.error('[events-storage] Error details:', error.details);
+      return [];
+    }
+    
+    if (!data) {
+      console.log('[events-storage] No data returned from supabase');
+      return [];
+    }
+    
+    if (data.length === 0) {
+      console.log('[events-storage] No active events found in database');
+      return [];
+    }
+    
+    console.log('[events-storage] Found', data.length, 'events from supabase');
+    return data.map(event => ({
+      ...event,
+      is_active: event.is_active ? 1 : 0,
+    })) as Event[];
+  } catch (error) {
+    console.error('[events-storage] Exception fetching from supabase:', error);
+    if (error instanceof Error) {
+      console.error('[events-storage] Error message:', error.message);
+      console.error('[events-storage] Error stack:', error.stack);
+    }
+    return [];
+  }
 }
 
 export async function getEventById(id: string, request?: Request): Promise<Event | null> {
   const supabase = getSupabaseClient();
   
-  if (supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('id', id)
-        .eq('is_active', true)
-        .single();
-      
-      if (error) {
-        console.error('[events] Supabase error:', error);
-        const event = hardcodedEvents.find(e => e.id === id && e.is_active === 1);
-        return event || null;
-      }
-      
-      if (data) {
-        return {
-          ...data,
-          is_active: data.is_active ? 1 : 0,
-        } as Event;
-      }
-    } catch (error) {
-      console.error('[events] Error fetching event from supabase:', error);
-    }
+  if (!supabase) {
+    console.error('[events] Supabase not configured');
+    return null;
   }
   
-  const event = hardcodedEvents.find(e => e.id === id && e.is_active === 1);
-  return event || null;
+  try {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('id', id)
+      .eq('is_active', true)
+      .single();
+    
+    if (error) {
+      console.error('[events] Supabase error:', error);
+      return null;
+    }
+    
+    if (!data) {
+      return null;
+    }
+    
+    return {
+      ...data,
+      is_active: data.is_active ? 1 : 0,
+    } as Event;
+  } catch (error) {
+    console.error('[events] Error fetching event from supabase:', error);
+    return null;
+  }
 }
 
 export async function getEventRegistrations(eventId: string, request?: Request): Promise<EventRegistration[]> {
