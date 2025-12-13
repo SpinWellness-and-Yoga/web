@@ -33,37 +33,42 @@ export interface EventRegistration {
   created_at?: string;
 }
 
+// hardcoded events fallback for vercel deployment (no D1)
+const hardcodedEvents: Event[] = [
+  {
+    id: 'lagos-2026-01-03',
+    name: 'recommit to your wellbeing - lagos edition',
+    description: 'join us for an intimate and exclusive wellness event in lagos. this 2-hour session is designed for young professionals looking to recommit to their wellbeing through a blend of physical practice, mindful engagement, and community building. event flow: 4:15-5:00pm - 45-minute group yoga session focused on mindful movement and breath. 5:00-5:15pm - 15-minute sound therapy session using sound bowls for deep relaxation. 5:15-5:45pm - open conversation on recommitting to your wellbeing, followed by refreshments and socializing. 5:45-6:00pm - clean-up and exit. limited to 20 attendees for an intimate and personalized experience. perfect for those looking to start their wellness journey or deepen an existing practice. this event provides practical tools and knowledge to manage stress and improve mental well-being in a safe, supportive, and welcoming environment.',
+    start_date: '2026-01-03T16:00:00+01:00',
+    end_date: '2026-01-03T18:00:00+01:00',
+    location: 'lagos',
+    venue: 'studio venue',
+    capacity: 20,
+    price: 0,
+    is_active: 1,
+    locations: '["Lagos"]',
+  },
+  {
+    id: 'ibadan-2026-01-10',
+    name: 'recommit to your wellbeing - ibadan edition',
+    description: 'join us for an intimate and exclusive wellness event in ibadan. this 2-hour session is designed for young professionals looking to recommit to their wellbeing through a blend of physical practice, mindful engagement, and community building. event flow: 4:15-5:00pm - 45-minute group yoga session focused on mindful movement and breath. 5:00-5:15pm - 15-minute sound therapy session using sound bowls for deep relaxation. 5:15-5:45pm - open conversation on recommitting to your wellbeing, followed by refreshments and socializing. 5:45-6:00pm - clean-up and exit. limited to 20 attendees for an intimate and personalized experience. perfect for those looking to start their wellness journey or deepen an existing practice. this event provides practical tools and knowledge to manage stress and improve mental well-being in a safe, supportive, and welcoming environment.',
+    start_date: '2026-01-10T16:00:00+01:00',
+    end_date: '2026-01-10T18:00:00+01:00',
+    location: 'ibadan',
+    venue: 'studio venue',
+    capacity: 20,
+    price: 0,
+    is_active: 1,
+    locations: '["Ibadan"]',
+  },
+];
+
 export async function getAllEvents(request?: Request): Promise<Event[]> {
   const db = getD1Database(request);
   
   if (!db) {
-    console.log('[events-storage] D1 database not available');
-    console.log('[events-storage] Request provided:', !!request);
-    console.log('[events-storage] ⚠️  IMPORTANT: You must run with "npm run dev:cf" (wrangler dev) to access D1 database');
-    console.log('[events-storage] Regular "npm run dev" (next dev) does not have D1 access');
-    
-    // try globalThis as fallback
-    if (typeof globalThis !== 'undefined') {
-      const g = globalThis as any;
-      console.log('[events-storage] Checking globalThis.env:', !!g.env);
-      console.log('[events-storage] globalThis.env keys:', g.env ? Object.keys(g.env) : 'none');
-      
-      if (g.env?.DATABASE) {
-        console.log('[events-storage] Found DATABASE in globalThis.env');
-        const fallbackDb = g.env.DATABASE;
-        try {
-          const result = await fallbackDb
-            .prepare('SELECT * FROM events WHERE is_active = 1 ORDER BY start_date ASC')
-            .all();
-          console.log('[events-storage] Fallback query returned:', result.results?.length || 0, 'events');
-          return (result.results || []) as Event[];
-        } catch (error) {
-          console.error('[events-storage] Error with fallback DB:', error);
-        }
-      }
-    }
-    
-    return [];
+    console.log('[events-storage] D1 database not available, using hardcoded events (vercel deployment)');
+    return hardcodedEvents.filter(e => e.is_active === 1);
   }
 
   try {
@@ -96,12 +101,11 @@ export async function getAllEvents(request?: Request): Promise<Event[]> {
     
     return (result.results || []) as Event[];
   } catch (error) {
-    console.error('[events-storage] Error fetching events:', error);
+    console.error('[events-storage] Error fetching events from D1, falling back to hardcoded events:', error);
     if (error instanceof Error) {
       console.error('[events-storage] Error message:', error.message);
-      console.error('[events-storage] Error stack:', error.stack);
     }
-    return [];
+    return hardcodedEvents.filter(e => e.is_active === 1);
   }
 }
 
@@ -109,8 +113,9 @@ export async function getEventById(id: string, request?: Request): Promise<Event
   const db = getD1Database(request);
   
   if (!db) {
-    console.log('[events] D1 database not available');
-    return null;
+    console.log('[events] D1 database not available, using hardcoded events');
+    const event = hardcodedEvents.find(e => e.id === id && e.is_active === 1);
+    return event || null;
   }
 
   try {
@@ -122,7 +127,8 @@ export async function getEventById(id: string, request?: Request): Promise<Event
     return result as Event | null;
   } catch (error) {
     console.error('[events] Error fetching event:', error);
-    return null;
+    const event = hardcodedEvents.find(e => e.id === id && e.is_active === 1);
+    return event || null;
   }
 }
 
