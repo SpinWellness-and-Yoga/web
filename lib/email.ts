@@ -16,6 +16,10 @@ function getEnvVar(key: string, env?: any): string | undefined {
     if (g.__CLOUDFLARE_ENV__?.[key]) return g.__CLOUDFLARE_ENV__[key];
   }
   
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[key];
+  }
+  
   return undefined;
 }
 
