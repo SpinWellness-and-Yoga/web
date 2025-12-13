@@ -11,6 +11,7 @@ interface Event {
   location: string;
   capacity: number;
   registrations?: any[];
+  registration_count?: number;
 }
 
 export default function EventsPopup() {
@@ -139,9 +140,13 @@ export default function EventsPopup() {
                 <div style={{ fontSize: '0.875rem', color: '#322216', marginBottom: '0.75rem' }}>
                   <p>📅 {formatDate(event.start_date)}</p>
                   <p>📍 {event.location}</p>
-                  {event.capacity > 0 && (
-                    <p>🎫 {event.capacity} spots available</p>
-                  )}
+                  {event.capacity > 0 && (() => {
+                    const registeredCount = event.registration_count ?? event.registrations?.length ?? 0;
+                    const spotsRemaining = event.capacity - registeredCount;
+                    return (
+                      <p>🎫 {spotsRemaining} of {event.capacity} spots remaining</p>
+                    );
+                  })()}
                 </div>
                 <Link
                   href={`/events/${event.id}`}

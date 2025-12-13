@@ -65,7 +65,7 @@ export default function ContactPage() {
         <div className={styles.navInner}>
           <Link href="/" className={styles.brand}>
             <Image
-              src="/logos/SWAY-Alt-logo-PNG.png"
+              src="/logos/SWAY-Primary-logo-(iteration).png"
               alt="Spinwellness & Yoga"
               width={300}
               height={100}
@@ -153,7 +153,7 @@ export default function ContactPage() {
         <div className={styles.footerInner}>
           <div className={styles.footerBrand}>
             <Image
-              src="/logos/SWAY-Alt-logo-PNG.png"
+              src="/logos/SWAY-Primary-logo-(iteration).png"
               alt="Spinwellness logomark"
               width={180}
               height={250}

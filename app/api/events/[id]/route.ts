@@ -39,7 +39,7 @@ export async function GET(
       registrations,
     }, { status: 200 });
   } catch (error) {
-    console.error('[events API] Error:', error);
+    console.error('[events API] Error fetching event');
     return NextResponse.json(
       { error: 'Failed to fetch event' },
       { status: 500 }

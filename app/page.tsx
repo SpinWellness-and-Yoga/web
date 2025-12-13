@@ -56,13 +56,12 @@ export default function Home() {
         <div className={styles.navInner}>
           <a href="#top" className={styles.brand}>
             <Image
-              src="/logos/SWAY-Alt-logo-PNG.png"
+              src="/logos/SWAY-Primary-logo-(iteration).png"
               alt="Spinwellness & Yoga primary logo"
-              width={300}
-              height={100}
+              width={450}
+              height={150}
               priority
             />
-            <span className={styles.brandTagline}>...the OM of bliss</span>
           </a>
           <nav className={styles.navLinks} aria-label="Primary">
             <a href="#services">Services</a>
@@ -196,15 +195,15 @@ export default function Home() {
         <div className={styles.footerInner}>
           <div className={styles.footerBrand}>
             <Image
-              src="/logos/SWAY-Alt-logo-PNG.png"
-              alt="Spinwellness logomark"
+              src="/logos/SWAY-Primary-logo-(iteration).png"
+              alt="Spinwellness & Yoga primary logo"
               width={180}
               height={250}
             />
             <p>Spinwellness & Yoga — wellness, therapy, and culture design for modern teams.</p>
           </div>
           <div className={styles.footerMeta}>
-            <span>© {new Date().getFullYear()} Spinwellness & Yoga. All rights reserved.</span>
+            <span>© 2025 Spinwellness & Yoga. All rights reserved.</span>
             <span>Launching globally · Rooted in Lagos & evergreen calm.</span>
           </div>
         </div>

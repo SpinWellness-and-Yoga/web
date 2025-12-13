@@ -15,6 +15,5 @@ database_id = "812db10b-8e64-4025-8052-1d3d6e0d8c79"
 [observability]
 enabled = true
 
-[vars]
-RESEND_API_KEY = "re_Yzg18yhQ_A5DEpPBcu54b56fRmaUQrPWY"
-ADMIN_EMAIL = "admin@spinwellness.org"
+# sensitive variables should be set via wrangler secret put or .dev.vars
+# do not commit API keys or secrets to version control
