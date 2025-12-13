@@ -21,7 +21,7 @@ function getEnvFromRequest(request: Request): any {
 
 export async function POST(request: Request) {
   try {
-    const env = getEnvFromRequest(request);
+    const env = getEnvFromRequest(request) || process.env;
     
     const contentType = request.headers.get("content-type") ?? "";
 

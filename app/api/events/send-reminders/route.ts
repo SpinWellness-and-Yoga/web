@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const env = getEnvFromRequest(request);
+    const env = getEnvFromRequest(request) || process.env;
     const events = await getAllEvents(request);
     
     const twoDaysFromNow = new Date();

@@ -271,7 +271,7 @@ export default function EventDetailPage() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
               <Link
-                href={`/events/${eventId}`}
+                href="/events"
                 style={{
                   display: 'inline-block',
                   padding: '0.75rem 2rem',
@@ -285,10 +285,10 @@ export default function EventDetailPage() {
                   maxWidth: '300px',
                 }}
               >
-                back to event
+                back to events
               </Link>
               <Link
-                href="/events"
+                href={`/events/${eventId}`}
                 style={{
                   display: 'inline-block',
                   padding: '0.75rem 2rem',
@@ -303,7 +303,7 @@ export default function EventDetailPage() {
                   maxWidth: '300px',
                 }}
               >
-                view all events
+                view event details
               </Link>
             </div>
           </div>

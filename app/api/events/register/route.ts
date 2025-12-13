@@ -18,7 +18,7 @@ function getEnvFromRequest(request: Request): any {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const env = getEnvFromRequest(request);
+    const env = getEnvFromRequest(request) || process.env;
     
     const { event_id, name, gender, profession, phone_number, email, location_preference, needs_directions, notes } = body;
 
