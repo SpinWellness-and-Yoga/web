@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { logger } from './logger';
 
 let supabaseClient: SupabaseClient | null = null;
 
@@ -8,13 +9,13 @@ export function getSupabaseClient(): SupabaseClient | null {
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  // prioritize service role key (bypasses RLS) over anon key
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    if (typeof window === 'undefined') {
-      console.log('[supabase] client not initialized - missing credentials');
-    }
+    logger.error('supabase configuration missing', undefined, { 
+      hasUrl: !!supabaseUrl, 
+      hasKey: !!supabaseKey 
+    });
     return null;
   }
 
@@ -24,12 +25,20 @@ export function getSupabaseClient(): SupabaseClient | null {
         persistSession: false,
         autoRefreshToken: false,
       },
+      db: {
+        schema: 'public',
+      },
+      global: {
+        headers: {
+          'x-application': 'spinwellness',
+        },
+      },
     });
     
+    logger.info('supabase client initialized');
     return supabaseClient;
   } catch (error) {
-    console.error('[supabase] failed to create client:', error);
+    logger.error('failed to create supabase client', error);
     return null;
   }
 }
-

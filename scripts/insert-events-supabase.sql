@@ -42,3 +42,4 @@ INSERT INTO events (
 )
 ON CONFLICT (id) DO NOTHING;
 
+

@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from '../../page.module.css';
+import { capitalizeWords, getEventAddress, getMapsUrl, formatEventDescription } from '@/lib/utils';
 
 interface Event {
   id: string;
@@ -84,8 +85,8 @@ export default function EventDetailPage() {
       } else if (response.status === 404) {
         setEvent(null);
       }
-    } catch (err) {
-      console.error('failed to load event:', err);
+    } catch {
+      setEvent(null);
     } finally {
       setLoading(false);
     }
@@ -182,8 +183,7 @@ export default function EventDetailPage() {
           setFormData(prev => ({ ...prev, email: '' }));
         }
       }
-    } catch (err) {
-      console.error('registration error:', err);
+    } catch {
       setSubmitError('failed to submit registration. please try again.');
     } finally {
       setSubmitting(false);
@@ -234,9 +234,11 @@ export default function EventDetailPage() {
               <Image
                 src="/logos/SWAY-Primary-logo-(iteration).png"
                 alt="Spinwellness & Yoga"
-                width={600}
-                height={200}
+                width={1260}
+                height={360}
                 priority
+                quality={95}
+                style={{ background: 'transparent' }}
               />
             </Link>
             <nav className={styles.navLinks} aria-label="Primary">
@@ -354,13 +356,33 @@ export default function EventDetailPage() {
               <Link href="/events" style={{ color: '#F16F64', textDecoration: 'underline', marginBottom: '1rem', display: 'inline-block' }}>
                 ← back to events
               </Link>
-              <h1 className={styles.heroTitle}>{event.name}</h1>
+              <h1 className={styles.heroTitle}>{capitalizeWords(event.name)}</h1>
               <div style={{ fontSize: '1.1rem', color: '#322216', marginTop: '1rem' }}>
-                <p><strong>Date:</strong> {formatDate(event.start_date)}</p>
-                <p><strong>Location:</strong> {event.location}</p>
-                {event.venue && <p><strong>Venue:</strong> {event.venue}</p>}
+                <p><strong>{capitalizeWords('date')}:</strong> {formatDate(event.start_date)}</p>
+                <p><strong>{capitalizeWords('location')}:</strong> {capitalizeWords(event.location)}</p>
+                {(() => {
+                  const address = getEventAddress(event.location);
+                  if (address) {
+                    const mapsUrl = getMapsUrl(address);
+                    return (
+                      <p>
+                        <strong>{capitalizeWords('address')}:</strong>{' '}
+                        <a 
+                          href={mapsUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ color: '#F16F64', textDecoration: 'underline' }}
+                        >
+                          {address}
+                        </a>
+                      </p>
+                    );
+                  }
+                  return null;
+                })()}
+                {event.venue && <p><strong>{capitalizeWords('venue')}:</strong> {capitalizeWords(event.venue)}</p>}
                 {spotsRemaining !== null && (
-                  <p><strong>Spots Available:</strong> {spotsRemaining} of {event.capacity}</p>
+                  <p><strong>{capitalizeWords('spots available')}:</strong> {spotsRemaining} of {event.capacity}</p>
                 )}
               </div>
             </div>
@@ -375,9 +397,13 @@ export default function EventDetailPage() {
             alignItems: 'start' 
           }}>
             <div>
-              <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', color: '#151B47' }}>event details</h2>
+              <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', color: '#151B47' }}>{capitalizeWords('event details')}</h2>
               <div style={{ lineHeight: '1.8', color: '#322216' }}>
-                <p style={{ whiteSpace: 'pre-line' }}>{event.description}</p>
+                {formatEventDescription(event.description).map((paragraph, index) => (
+                  <p key={index} style={{ marginBottom: '1.5rem' }}>
+                    {capitalizeWords(paragraph)}
+                  </p>
+                ))}
               </div>
             </div>
 
@@ -389,7 +415,7 @@ export default function EventDetailPage() {
               border: '1px solid rgba(241, 111, 100, 0.1)',
               opacity: spotsRemaining !== null && spotsRemaining <= 0 ? 0.6 : 1,
             }}>
-              <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', color: '#151B47' }}>register</h2>
+              <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', color: '#151B47' }}>{capitalizeWords('register')}</h2>
               {spotsRemaining !== null && spotsRemaining <= 0 ? (
                 <>
                   <p style={{ color: '#f16f64', marginBottom: '1.5rem', lineHeight: '1.6', fontWeight: '600', fontSize: '1.1rem' }}>

@@ -4,30 +4,24 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:cf": "wrangler dev --port 8788 --compatibility-date 2025-03-25 --compatibility-flags nodejs_compat",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "preview": "opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "lint": "next lint"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.87.1",
-    "next": "15.0.7",
+    "next": "^15.5.9",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "resend": "^6.4.2"
   },
   "devDependencies": {
-    "@opennextjs/cloudflare": "^1.11.1",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/parser": "^8.46.3",
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.0.1",
-    "typescript": "^5.5.0",
-    "wrangler": "^4.46.0"
+    "typescript": "^5.5.0"
   }
 }

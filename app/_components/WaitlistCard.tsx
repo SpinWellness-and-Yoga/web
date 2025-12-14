@@ -53,8 +53,7 @@ export default function WaitlistCard() {
       setStatus("success");
       setFeedback("You're on the list! We'll share activation details soon.");
       setFormData(initialState);
-    } catch (error) {
-      console.error("Waitlist submission error", error);
+    } catch {
       setStatus("error");
       setFeedback("Something went wrong. Please try again or email hello@spinwellness.com.");
     }

@@ -52,8 +52,7 @@ export default function ContactPage() {
       setStatus('success');
       setFeedback('Thank you! Your message has been sent. We&apos;ll get back to you soon.');
       setFormData(initialState);
-    } catch (error) {
-      console.error('Contact form error', error);
+    } catch {
       setStatus('error');
       setFeedback('Something went wrong. Please try again.');
     }
@@ -67,9 +66,11 @@ export default function ContactPage() {
             <Image
               src="/logos/SWAY-Primary-logo-(iteration).png"
               alt="Spinwellness & Yoga"
-              width={600}
-              height={200}
+              width={1260}
+              height={360}
               priority
+              quality={95}
+              style={{ background: 'transparent' }}
             />
           </Link>
           <nav className={styles.navLinks} aria-label="Primary">

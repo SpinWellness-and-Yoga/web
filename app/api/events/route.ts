@@ -1,36 +1,26 @@
 import { NextResponse } from 'next/server';
-import { getAllEvents, getEventRegistrations } from '@/lib/events-storage';
+import { getAllEventsWithCounts } from '@/lib/events-storage';
+
+export const revalidate = 60;
 
 export async function GET(request: Request) {
   try {
-    const events = await getAllEvents(request);
+    const events = await getAllEventsWithCounts(request);
     
-    // fetch registration counts for each event
-    const eventsWithRegistrations = await Promise.all(
-      events.map(async (event) => {
-        const registrations = await getEventRegistrations(event.id, request);
-        return {
-          ...event,
-          registrations,
-          registration_count: registrations.length,
-        };
-      })
-    );
-    
-    return NextResponse.json(eventsWithRegistrations || [], { 
+    return NextResponse.json(events || [], { 
       status: 200,
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
       }
     });
-  } catch (error) {
-    console.error('[events API] Error fetching events');
+  } catch {
     return NextResponse.json([], { 
       status: 200,
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
       }
     });
   }
 }
-

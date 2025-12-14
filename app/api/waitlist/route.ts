@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
     if (!name || !email || !company) {
       return NextResponse.json(
-        { success: false, error: "Name, email, and company are required" },
+        { success: false, error: "name, email, and company are required" },
         { status: 400 }
       );
     }
@@ -62,31 +62,23 @@ export async function POST(request: Request) {
       priority,
     };
 
-    try {
-      await sendWaitlistNotification(entry, env);
-    } catch (err) {
-      console.error('[waitlist POST] Email notification failed');
-    }
-    
-    try {
-      await sendWaitlistConfirmation({
+    Promise.all([
+      sendWaitlistNotification(entry, env),
+      sendWaitlistConfirmation({
         full_name: entry.full_name,
         email: entry.email,
         company: entry.company,
-      }, env);
-    } catch (err) {
-      console.error('[waitlist POST] Confirmation email failed');
-    }
+      }, env),
+    ]).catch(() => {});
 
     return NextResponse.json(
       {
         success: true,
-        message: "Added to waitlist successfully",
+        message: "added to waitlist successfully",
       },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('[waitlist POST] Error');
-    return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
+  } catch {
+    return NextResponse.json({ success: false, error: "internal server error" }, { status: 500 });
   }
 }

@@ -84,7 +84,7 @@ export async function sendWaitlistConfirmation(entry: {
   const emailBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 350px; width: 100%; height: auto; margin-bottom: 20px;" />
+        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 280px; max-height: 80px; width: auto; height: auto; margin-bottom: 20px;" />
         <h1 style="color: #151b47; font-size: 28px; margin: 0 0 10px;">Welcome to the Waitlist!</h1>
       </div>
       
@@ -180,7 +180,7 @@ export async function sendContactConfirmation(entry: {
   const emailBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 350px; width: 100%; height: auto; margin-bottom: 20px;" />
+        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 280px; max-height: 80px; width: auto; height: auto; margin-bottom: 20px;" />
         <h1 style="color: #151b47; font-size: 28px; margin: 0 0 10px;">Thank you for reaching out!</h1>
       </div>
       
@@ -307,6 +307,7 @@ export async function sendEventRegistrationConfirmation(entry: {
   event_date: string;
   event_location: string;
   event_venue?: string;
+  event_address?: string;
   name: string;
   email: string;
   ticket_number: string;
@@ -335,7 +336,7 @@ export async function sendEventRegistrationConfirmation(entry: {
   const emailBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 350px; width: 100%; height: auto; margin-bottom: 20px;" />
+        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 280px; max-height: 80px; width: auto; height: auto; margin-bottom: 20px;" />
         <h1 style="color: #151b47; font-size: 28px; margin: 0 0 10px;">You&apos;re Registered!</h1>
       </div>
       
@@ -344,6 +345,7 @@ export async function sendEventRegistrationConfirmation(entry: {
         <p style="color: rgba(255, 255, 255, 0.95); margin: 5px 0; font-size: 16px;"><strong>Date:</strong> ${escapeHtml(entry.event_date)}</p>
         <p style="color: rgba(255, 255, 255, 0.95); margin: 5px 0; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.event_location)}</p>
         ${entry.event_venue ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 5px 0; font-size: 16px;"><strong>Venue:</strong> ${escapeHtml(entry.event_venue)}</p>` : ''}
+        ${entry.event_address ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 5px 0; font-size: 16px;"><strong>Address:</strong> ${escapeHtml(entry.event_address)}</p>` : ''}
       </div>
       
       <div style="background: #fef9f5; padding: 30px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #f16f64;">
@@ -426,7 +428,7 @@ export async function sendEventReminder(entry: {
   const emailBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 350px; width: 100%; height: auto; margin-bottom: 20px;" />
+        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 280px; max-height: 80px; width: auto; height: auto; margin-bottom: 20px;" />
         <h1 style="color: #151b47; font-size: 28px; margin: 0 0 10px;">Event Reminder</h1>
       </div>
       

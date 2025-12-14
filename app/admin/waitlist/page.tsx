@@ -32,9 +32,8 @@ export default function WaitlistAdmin() {
       } else {
         setError(data.error || 'Failed to fetch entries');
       }
-    } catch (err) {
+    } catch {
       setError('Error loading waitlist entries');
-      console.error(err);
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from '../page.module.css';
+import { capitalizeWords } from '@/lib/utils';
 
 interface Event {
   id: string;
@@ -34,18 +35,13 @@ export default function EventsPage() {
     try {
       setLoading(true);
       const response = await fetch('/api/events');
-      console.log('[events page] Response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('[events page] Events received:', data.length);
         setEvents(data);
-      } else {
-        const errorData = await response.json();
-        console.error('[events page] API error:', errorData);
       }
-    } catch (err) {
-      console.error('[events page] Failed to load events:', err);
+    } catch {
+      setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -69,9 +65,11 @@ export default function EventsPage() {
             <Image
               src="/logos/SWAY-Primary-logo-(iteration).png"
               alt="Spinwellness & Yoga"
-              width={600}
-              height={200}
+              width={1260}
+              height={360}
               priority
+              quality={95}
+              style={{ background: 'transparent' }}
             />
           </Link>
           <nav className={styles.navLinks} aria-label="Primary">
@@ -88,10 +86,10 @@ export default function EventsPage() {
         <section className={styles.hero}>
           <div className={styles.heroContent}>
             <div className={styles.heroCopy}>
-              <span className={styles.kicker}>upcoming events</span>
-              <h1 className={styles.heroTitle}>join our wellness events</h1>
+              <span className={styles.kicker}>{capitalizeWords('upcoming events')}</span>
+              <h1 className={styles.heroTitle}>{capitalizeWords('join our wellness events')}</h1>
               <p className={styles.heroBody}>
-                experience transformative yoga, meditation, and wellness workshops designed to nourish your mind, body, and spirit.
+                {capitalizeWords('experience transformative yoga, meditation, and wellness workshops designed to nourish your mind, body, and spirit.')}
               </p>
             </div>
           </div>
@@ -107,7 +105,10 @@ export default function EventsPage() {
           </div>
         ) : (
           <section style={{ padding: '4rem 2rem' }}>
-            <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
+            <div style={{ 
+              maxWidth: '1200px', 
+              margin: '0 auto',
+            }} className={styles.eventsGrid}>
               {events.map((event) => (
                 <div key={event.id} style={{ 
                   background: 'white', 
@@ -116,7 +117,7 @@ export default function EventsPage() {
                   boxShadow: '0 4px 20px rgba(21, 27, 71, 0.05)',
                   transition: 'transform 0.3s',
                 }}>
-                  <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: '#151B47' }}>{event.name}</h3>
+                  <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: '#151B47' }}>{capitalizeWords(event.name)}</h3>
                   <div style={{ fontSize: '0.9rem', color: '#322216', marginBottom: '1rem' }}>
                     <p><strong>Date:</strong> {formatDate(event.start_date)}</p>
                     <p><strong>Location:</strong> {event.location}</p>
@@ -156,4 +157,3 @@ export default function EventsPage() {
     </div>
   );
 }
-

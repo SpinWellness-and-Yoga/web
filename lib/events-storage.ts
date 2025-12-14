@@ -1,5 +1,8 @@
-import { getD1Database, D1Database } from './d1';
 import { getSupabaseClient } from './supabase';
+import { logger } from './logger';
+import { generateSecureTicketNumber } from './ticket-generator';
+import { cache } from './cache';
+import { CACHE_CONFIG } from './constants';
 
 export interface Event {
   id: string;
@@ -16,6 +19,7 @@ export interface Event {
   locations?: string;
   created_at?: string;
   updated_at?: string;
+  registration_count?: number;
 }
 
 export interface EventRegistration {
@@ -34,11 +38,71 @@ export interface EventRegistration {
   created_at?: string;
 }
 
+export async function getAllEventsWithCounts(request?: Request): Promise<Event[]> {
+  const cacheKey = 'events:all:with-counts';
+  const cached = cache.get<Event[]>(cacheKey);
+  
+  if (cached) {
+    logger.debug('returning cached events list');
+    return cached;
+  }
+
+  const supabase = getSupabaseClient();
+  
+  if (!supabase) {
+    logger.error('supabase client unavailable');
+    return [];
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from('events')
+      .select(`
+        *,
+        event_registrations(count)
+      `)
+      .eq('is_active', true)
+      .order('start_date', { ascending: true });
+    
+    if (error) {
+      logger.error('failed to fetch events with counts', error);
+      return [];
+    }
+    
+    if (!data) {
+      return [];
+    }
+    
+    const events = data.map(event => ({
+      id: event.id,
+      name: event.name,
+      description: event.description,
+      image_url: event.image_url,
+      start_date: event.start_date,
+      end_date: event.end_date,
+      location: event.location,
+      venue: event.venue,
+      capacity: event.capacity,
+      price: event.price,
+      is_active: event.is_active ? 1 : 0,
+      locations: event.locations,
+      created_at: event.created_at,
+      updated_at: event.updated_at,
+      registration_count: event.event_registrations?.[0]?.count || 0,
+    })) as Event[];
+
+    cache.set(cacheKey, events, CACHE_CONFIG.EVENTS_LIST_TTL);
+    return events;
+  } catch (error) {
+    logger.error('exception fetching events with counts', error);
+    return [];
+  }
+}
+
 export async function getAllEvents(request?: Request): Promise<Event[]> {
   const supabase = getSupabaseClient();
   
   if (!supabase) {
-    console.error('[events-storage] Supabase not configured');
     return [];
   }
   
@@ -50,8 +114,6 @@ export async function getAllEvents(request?: Request): Promise<Event[]> {
       .order('start_date', { ascending: true });
     
     if (error) {
-      console.error('[events-storage] Supabase error:', error.code);
-      
       if (error.code === 'PGRST301' || error.message?.includes('permission') || error.message?.includes('policy')) {
         const fallbackResult = await supabase
           .from('events')
@@ -78,8 +140,7 @@ export async function getAllEvents(request?: Request): Promise<Event[]> {
       ...event,
       is_active: event.is_active ? 1 : 0,
     })) as Event[];
-  } catch (error) {
-    console.error('[events-storage] Exception fetching events');
+  } catch {
     return [];
   }
 }
@@ -88,7 +149,6 @@ export async function getEventById(id: string, request?: Request): Promise<Event
   const supabase = getSupabaseClient();
   
   if (!supabase) {
-    console.error('[events] Supabase not configured');
     return null;
   }
   
@@ -100,12 +160,7 @@ export async function getEventById(id: string, request?: Request): Promise<Event
       .eq('is_active', true)
       .single();
     
-    if (error) {
-      console.error('[events] Supabase error:', error);
-      return null;
-    }
-    
-    if (!data) {
+    if (error || !data) {
       return null;
     }
     
@@ -113,8 +168,57 @@ export async function getEventById(id: string, request?: Request): Promise<Event
       ...data,
       is_active: data.is_active ? 1 : 0,
     } as Event;
+  } catch {
+    return null;
+  }
+}
+
+export async function getEventByIdWithCount(id: string, request?: Request): Promise<Event | null> {
+  const cacheKey = `event:${id}:with-count`;
+  const cached = cache.get<Event>(cacheKey);
+  
+  if (cached) {
+    logger.debug('returning cached event', { eventId: id });
+    return cached;
+  }
+
+  const supabase = getSupabaseClient();
+  
+  if (!supabase) {
+    logger.error('supabase client unavailable');
+    return null;
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from('events')
+      .select(`
+        *,
+        event_registrations(count)
+      `)
+      .eq('id', id)
+      .eq('is_active', true)
+      .single();
+    
+    if (error) {
+      logger.warn('event not found or error', error, { eventId: id });
+      return null;
+    }
+    
+    if (!data) {
+      return null;
+    }
+    
+    const event = {
+      ...data,
+      is_active: data.is_active ? 1 : 0,
+      registration_count: data.event_registrations?.[0]?.count || 0,
+    } as Event;
+
+    cache.set(cacheKey, event, CACHE_CONFIG.EVENT_DETAIL_TTL);
+    return event;
   } catch (error) {
-    console.error('[events] Error fetching event from supabase:', error);
+    logger.error('exception fetching event by id', error, { eventId: id });
     return null;
   }
 }
@@ -123,7 +227,6 @@ export async function getEventRegistrations(eventId: string, request?: Request):
   const supabase = getSupabaseClient();
   
   if (!supabase) {
-    console.log('[events] Supabase not available');
     return [];
   }
 
@@ -135,7 +238,6 @@ export async function getEventRegistrations(eventId: string, request?: Request):
       .order('created_at', { ascending: false });
     
     if (error) {
-      console.error('[events] Error fetching registrations:', error);
       return [];
     }
     
@@ -143,9 +245,31 @@ export async function getEventRegistrations(eventId: string, request?: Request):
       ...reg,
       needs_directions: reg.needs_directions ? 1 : 0,
     })) as EventRegistration[];
-  } catch (error) {
-    console.error('[events] Error fetching registrations:', error);
+  } catch {
     return [];
+  }
+}
+
+export async function getEventRegistrationCount(eventId: string, request?: Request): Promise<number> {
+  const supabase = getSupabaseClient();
+  
+  if (!supabase) {
+    return 0;
+  }
+
+  try {
+    const { count, error } = await supabase
+      .from('event_registrations')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_id', eventId);
+    
+    if (error) {
+      return 0;
+    }
+    
+    return count || 0;
+  } catch {
+    return 0;
   }
 }
 
@@ -153,25 +277,34 @@ export async function checkDuplicateRegistration(eventId: string, email: string,
   const supabase = getSupabaseClient();
   
   if (!supabase) {
+    logger.error('supabase client unavailable for duplicate check');
     return false;
   }
+
+  const normalizedEmail = email.toLowerCase().trim();
 
   try {
     const { data, error } = await supabase
       .from('event_registrations')
       .select('id')
       .eq('event_id', eventId)
-      .eq('email', email.toLowerCase().trim())
-      .limit(1);
+      .eq('email', normalizedEmail)
+      .limit(1)
+      .maybeSingle();
     
-    if (error) {
-      console.error('[events] Error checking duplicate:', error);
+    if (error && error.code !== 'PGRST116') {
+      logger.error('error checking duplicate registration', error, { eventId, email: normalizedEmail });
       return false;
     }
     
-    return (data && data.length > 0);
+    const isDuplicate = !!data;
+    if (isDuplicate) {
+      logger.info('duplicate registration detected', { eventId, email: normalizedEmail });
+    }
+    
+    return isDuplicate;
   } catch (error) {
-    console.error('[events] Error checking duplicate:', error);
+    logger.error('exception checking duplicate registration', error, { eventId, email: normalizedEmail });
     return false;
   }
 }
@@ -183,12 +316,34 @@ export async function createEventRegistration(
   const supabase = getSupabaseClient();
   
   if (!supabase) {
-    throw new Error('Supabase not available');
+    logger.error('supabase client unavailable for registration');
+    throw new Error('database unavailable');
   }
 
-  const ticketNumber = `SWAY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+  const ticketNumber = generateSecureTicketNumber();
+  const normalizedEmail = registration.email.toLowerCase().trim();
 
   try {
+    // check capacity before inserting
+    const { data: eventData, error: eventError } = await supabase
+      .from('events')
+      .select('capacity, event_registrations(count)')
+      .eq('id', registration.event_id)
+      .eq('is_active', true)
+      .single();
+
+    if (eventError || !eventData) {
+      logger.error('event not found during registration', eventError, { eventId: registration.event_id });
+      throw new Error('event not found');
+    }
+
+    const registrationCount = eventData.event_registrations?.[0]?.count || 0;
+    if (eventData.capacity > 0 && registrationCount >= eventData.capacity) {
+      logger.warn('event at capacity', { eventId: registration.event_id, capacity: eventData.capacity });
+      throw new Error('event is at capacity');
+    }
+
+    // insert registration with optimistic locking
     const { data, error } = await supabase
       .from('event_registrations')
       .insert({
@@ -197,7 +352,7 @@ export async function createEventRegistration(
         gender: registration.gender,
         profession: registration.profession,
         phone_number: registration.phone_number,
-        email: registration.email,
+        email: normalizedEmail,
         location_preference: registration.location_preference,
         needs_directions: registration.needs_directions === 1,
         notes: registration.notes || null,
@@ -208,17 +363,34 @@ export async function createEventRegistration(
       .single();
 
     if (error) {
-      console.error('[events] Error creating registration:', error);
+      // check for unique constraint violation
+      if (error.code === '23505') {
+        logger.warn('duplicate registration attempt', { eventId: registration.event_id, email: normalizedEmail });
+        throw new Error('registration already exists');
+      }
+      logger.error('failed to create registration', error, { eventId: registration.event_id });
       throw error;
     }
+
+    // invalidate cache after successful registration
+    cache.invalidatePattern(`event:${registration.event_id}`);
+    cache.invalidatePattern('events:all');
+
+    logger.info('registration created successfully', { 
+      eventId: registration.event_id, 
+      ticketNumber,
+      email: normalizedEmail 
+    });
 
     return {
       ...data,
       needs_directions: data.needs_directions ? 1 : 0,
     } as EventRegistration;
   } catch (error) {
-    console.error('[events] Error creating registration:', error);
+    logger.error('exception creating registration', error, { 
+      eventId: registration.event_id, 
+      email: normalizedEmail 
+    });
     throw error;
   }
 }
-

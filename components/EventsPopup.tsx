@@ -28,17 +28,18 @@ export default function EventsPopup() {
           setIsOpen(true);
         }
       }
-    } catch (err) {
-      console.log('failed to load events:', err);
+    } catch {
+      setEvents([]);
     }
   }, []);
 
   useEffect(() => {
     const hasSeenPopup = localStorage.getItem('events-popup-seen');
     if (!hasSeenPopup) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         loadEvents();
-      }, 2000);
+      }, 3000);
+      return () => clearTimeout(timer);
     }
   }, [loadEvents]);
 
