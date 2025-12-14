@@ -124,7 +124,12 @@ export async function sendContactNotification(entry: {
   message: string;
 }, env?: any): Promise<void> {
   const resendApiKey = getEnvVar('RESEND_API_KEY', env);
-  const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellnessandyoga.com';
+  const adminEmail = getEnvVar('ADMIN_EMAIL', env);
+
+  if (!adminEmail || !adminEmail.includes('@')) {
+    console.error('[sendContactNotification] Invalid ADMIN_EMAIL:', adminEmail);
+    return;
+  }
 
   if (!resendApiKey) {
     console.error('[sendContactNotification] RESEND_API_KEY not found');
@@ -226,6 +231,11 @@ export async function sendEventRegistrationNotification(entry: {
   const resendApiKey = getEnvVar('RESEND_API_KEY', env);
   const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellnessandyoga.com';
 
+  if (!adminEmail || !adminEmail.includes('@')) {
+    console.error('[sendEventRegistrationNotification] Invalid ADMIN_EMAIL:', adminEmail);
+    return;
+  }
+
   if (!resendApiKey) {
     console.error('[sendEventRegistrationNotification] RESEND_API_KEY not found');
     return;
@@ -271,14 +281,24 @@ export async function sendEventRegistrationNotification(entry: {
 
   try {
     const resend = new Resend(resendApiKey);
-    const result = await resend.emails.send(emailPayload);
-    if (result.error) {
-      console.log('[sendEventRegistrationNotification] Email sending failed (non-blocking):', result.error.message || 'domain not verified');
+    const result = await Promise.race([
+      resend.emails.send(emailPayload),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('email send timeout after 10s')), 10000)
+      )
+    ]) as any;
+    
+    if (result?.error) {
+      console.log('[sendEventRegistrationNotification] Email sending failed (non-blocking):', result.error.message || result.error.name || JSON.stringify(result.error));
+    } else if (result?.data?.id) {
+      console.log('[sendEventRegistrationNotification] Notification email sent successfully to:', adminEmail, 'id:', result.data.id);
     } else {
-      console.log('[sendEventRegistrationNotification] Notification email sent successfully');
+      console.log('[sendEventRegistrationNotification] Email sent but unexpected response format:', result);
     }
   } catch (error) {
-    console.log('[sendEventRegistrationNotification] Email sending failed (non-blocking):', error instanceof Error ? error.message : 'unknown error');
+    const errorMessage = error instanceof Error ? error.message : 'unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.log('[sendEventRegistrationNotification] Email sending failed (non-blocking):', errorMessage, errorStack ? `\nStack: ${errorStack}` : '');
   }
 }
 
@@ -352,14 +372,24 @@ export async function sendEventRegistrationConfirmation(entry: {
 
   try {
     const resend = new Resend(resendApiKey);
-    const result = await resend.emails.send(emailPayload);
-    if (result.error) {
-      console.log('[sendEventRegistrationConfirmation] Email sending failed (non-blocking):', result.error.message || 'domain not verified');
+    const result = await Promise.race([
+      resend.emails.send(emailPayload),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('email send timeout after 10s')), 10000)
+      )
+    ]) as any;
+    
+    if (result?.error) {
+      console.log('[sendEventRegistrationConfirmation] Email sending failed (non-blocking):', result.error.message || result.error.name || JSON.stringify(result.error));
+    } else if (result?.data?.id) {
+      console.log('[sendEventRegistrationConfirmation] Confirmation email sent successfully to:', entry.email, 'id:', result.data.id);
     } else {
-      console.log('[sendEventRegistrationConfirmation] Confirmation email sent successfully');
+      console.log('[sendEventRegistrationConfirmation] Email sent but unexpected response format:', result);
     }
   } catch (error) {
-    console.log('[sendEventRegistrationConfirmation] Email sending failed (non-blocking):', error instanceof Error ? error.message : 'unknown error');
+    const errorMessage = error instanceof Error ? error.message : 'unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.log('[sendEventRegistrationConfirmation] Email sending failed (non-blocking):', errorMessage, errorStack ? `\nStack: ${errorStack}` : '');
   }
 }
 
