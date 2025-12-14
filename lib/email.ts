@@ -124,7 +124,12 @@ export async function sendContactNotification(entry: {
   message: string;
 }, env?: any): Promise<void> {
   const resendApiKey = getEnvVar('RESEND_API_KEY', env);
-  const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellnessandyoga.com';
+  const adminEmail = getEnvVar('ADMIN_EMAIL', env);
+
+  if (!adminEmail || !adminEmail.includes('@')) {
+    console.error('[sendContactNotification] Invalid ADMIN_EMAIL:', adminEmail);
+    return;
+  }
 
   if (!resendApiKey) {
     console.error('[sendContactNotification] RESEND_API_KEY not found');
@@ -225,6 +230,11 @@ export async function sendEventRegistrationNotification(entry: {
 }, env?: any): Promise<void> {
   const resendApiKey = getEnvVar('RESEND_API_KEY', env);
   const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellnessandyoga.com';
+
+  if (!adminEmail || !adminEmail.includes('@')) {
+    console.error('[sendEventRegistrationNotification] Invalid ADMIN_EMAIL:', adminEmail);
+    return;
+  }
 
   if (!resendApiKey) {
     console.error('[sendEventRegistrationNotification] RESEND_API_KEY not found');
