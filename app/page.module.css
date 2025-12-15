@@ -46,11 +46,18 @@
 .brand img {
   height: auto;
   width: auto;
-  max-width: 1200px;
-  max-height: 140px;
+  max-width: 360px;
+  max-height: 300px;
   object-fit: contain;
   opacity: 1;
   filter: contrast(1.1);
+}
+
+@media (max-width: 768px) {
+  .brand img {
+    max-width: 200px;
+    max-height: 150px;
+  }
 }
 
 .eventsGrid {
@@ -111,7 +118,7 @@
 
 .mobileMenu {
   position: fixed;
-  top: 140px;
+  top: 160px;
   left: 0;
   right: 0;
   background: rgba(253, 247, 241, 0.98);
@@ -188,7 +195,7 @@
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 0 1.5rem 6rem;
-  padding-top: 130px;
+  padding-top: 170px;
 }
 
 .hero {

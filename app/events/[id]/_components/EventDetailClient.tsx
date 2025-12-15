@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import React, {useState} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {Event} from '../../../../lib/events-storage';
 import {capitalizeWords, formatEventDescription, getEventAddress, getEventLocationLabel, getMapsUrl} from '../../../../lib/utils';
 import styles from '../../../page.module.css';
@@ -28,6 +28,9 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [registrationCount, setRegistrationCount] = useState<number>(event.registration_count ?? 0);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string>('');
+  const [copied, setCopied] = useState(false);
   
   const [formData, setFormData] = useState<RegistrationForm>({
     name: '',
@@ -44,9 +47,21 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
     phone_number?: string;
     email?: string;
     notes?: string;
+    terms?: string;
   }>({});
 
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = `${window.location.origin}/events/${encodeURIComponent(String(eventId).trim())}`;
+    setShareUrl(url);
+  }, [eventId]);
+
+  const getSpotsRemaining = (count: number): number | null => {
+    if (!event || event.capacity <= 0) return null;
+    return Math.max(0, event.capacity - count);
+  };
 
   const handlePhoneChange = (value: string) => {
     const numbersOnly = value.replace(/\D/g, '');
@@ -66,7 +81,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
   };
 
   const validateForm = (): boolean => {
-    const errors: { phone_number?: string; email?: string; notes?: string } = {};
+    const errors: { phone_number?: string; email?: string; notes?: string; terms?: string } = {};
 
     if (!formData.phone_number || formData.phone_number.length < 10) {
       errors.phone_number = 'phone number must be at least 10 digits';
@@ -80,6 +95,10 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
 
     if (formData.notes && formData.notes.length > 200) {
       errors.notes = 'notes cannot exceed 200 characters';
+    }
+
+    if (!termsAccepted) {
+      errors.terms = 'you must accept the terms and waiver to continue';
     }
 
     if (Object.keys(errors).length > 0) {
@@ -96,7 +115,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
     setSubmitError(null);
     setValidationErrors({});
 
-    const spotsRemaining = event && event.capacity > 0 ? event.capacity - registrationCount : null;
+    const spotsRemaining = getSpotsRemaining(registrationCount);
     
     if (spotsRemaining !== null && spotsRemaining <= 0) {
       setSubmitError('this event is sold out');
@@ -119,6 +138,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
           ...formData,
           event_id: eventId,
           needs_directions: formData.needs_directions ? 1 : 0,
+          terms_accepted: termsAccepted,
         }),
       });
 
@@ -126,6 +146,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
         setSubmitSuccess(true);
         setShowForm(false);
         setRegistrationCount((c) => c + 1);
+        setTermsAccepted(false);
         setFormData({
           name: '',
           gender: '',
@@ -161,6 +182,108 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
       day: 'numeric',
     });
   };
+
+  const spotsRemaining = getSpotsRemaining(registrationCount);
+  const locationLabel = getEventLocationLabel(event.location);
+  const address = getEventAddress(event.location);
+  const brandHandle = '@spinwellnessandyoga';
+
+  const shareText = useMemo(() => {
+    const title = capitalizeWords(event.name);
+    const date = formatDateOnly(event.start_date);
+    const time = '4:30 PM WAT';
+    const lines = [
+      `i will be attending ${title} with ${brandHandle}.`,
+      '',
+      `date: ${date}`,
+      `time: ${time}`,
+      `location: ${locationLabel}`,
+    ];
+    if (address) {
+      lines.push(`address: ${address}`);
+    }
+    if (shareUrl) {
+      lines.push('', shareUrl);
+    }
+    return lines.join('\n');
+  }, [address, brandHandle, event.name, event.start_date, locationLabel, shareUrl]);
+
+  const shareLinks = useMemo(() => {
+    const url = shareUrl || '';
+    const encodedUrl = encodeURIComponent(url);
+    const encodedText = encodeURIComponent(shareText);
+    return {
+      whatsapp: `https://wa.me/?text=${encodedText}`,
+      x: `https://twitter.com/intent/tweet?text=${encodedText}`,
+      instagram: `https://www.instagram.com/`,
+      copy: url,
+    };
+  }, [shareText, shareUrl]);
+
+  const handleCopyLink = useCallback(async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
+    } catch {
+      // ignore
+    }
+  }, [shareUrl]);
+
+  const handleInstagramShare = useCallback(async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareText);
+      window.open(shareLinks.instagram, '_blank', 'noopener,noreferrer');
+    } catch {
+      window.open(shareLinks.instagram, '_blank', 'noopener,noreferrer');
+    }
+  }, [shareLinks.instagram, shareText, shareUrl]);
+
+  const SocialIconButton = ({
+    href,
+    label,
+    children,
+    onClick,
+  }: {
+    href: string;
+    label: string;
+    children: React.ReactNode;
+    onClick?: () => void;
+  }) => (
+    <a
+      href={href}
+      onClick={(e) => {
+        if (!onClick) return;
+        e.preventDefault();
+        onClick();
+      }}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={label}
+      style={{
+        width: 44,
+        height: 44,
+        borderRadius: 999,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        border: '1px solid rgba(21, 27, 71, 0.12)',
+        background: 'rgba(241, 111, 100, 0.10)',
+        color: '#151B47',
+        textDecoration: 'none',
+      }}
+    >
+      {children}
+    </a>
+  );
+
+  const Icon = ({ path }: { path: string }) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d={path} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
 
   if (submitSuccess) {
     return (
@@ -235,9 +358,6 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
     );
   }
 
-  const spotsRemaining = event.capacity > 0 ? event.capacity - registrationCount : null;
-  const locationLabel = getEventLocationLabel(event.location);
-
   return (
     <>
       <main className={styles.main} style={{ opacity: showForm ? 0.3 : 1, transition: 'opacity 0.3s ease', pointerEvents: showForm ? 'none' : 'auto' }}>
@@ -253,7 +373,6 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                 <p><strong>{capitalizeWords('time')}:</strong> 4:30 PM WAT</p>
                 <p><strong>{capitalizeWords('location')}:</strong> {locationLabel}</p>
                 {(() => {
-                  const address = getEventAddress(event.location);
                   if (address) {
                     const mapsUrl = getMapsUrl(address);
                     return (
@@ -275,6 +394,53 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                 {spotsRemaining !== null && (
                   <p><strong>{capitalizeWords('spots available')}:</strong> {spotsRemaining} of {event.capacity}</p>
                 )}
+              </div>
+
+              <div style={{ marginTop: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                  <div />
+
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.45rem' }}>
+                    <div style={{ fontSize: '0.85rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(21, 27, 71, 0.65)', fontWeight: 600 }}>
+                      share
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      <SocialIconButton href={shareLinks.whatsapp} label="share on whatsapp">
+                        <Icon path="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12Z" />
+                      </SocialIconButton>
+                      <SocialIconButton href={shareLinks.x} label="share on x">
+                        <Icon path="M18 6L6 18M7 6l11 12" />
+                      </SocialIconButton>
+                      <SocialIconButton href={shareLinks.instagram} label="share on instagram" onClick={handleInstagramShare}>
+                        <Icon path="M8 7h8a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-6a4 4 0 0 1 4-4Zm8 5.5a3.5 3.5 0 1 1-6.9 1 3.5 3.5 0 0 1 6.9-1ZM17.5 10.5h.01" />
+                      </SocialIconButton>
+                      <button
+                        type="button"
+                        onClick={handleCopyLink}
+                        disabled={!shareLinks.copy}
+                        aria-label="copy link"
+                        style={{
+                          padding: '0 14px',
+                          height: 44,
+                          borderRadius: 999,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          border: '1px solid rgba(21, 27, 71, 0.12)',
+                          background: '#ffffff',
+                          color: '#151B47',
+                          cursor: shareLinks.copy ? 'pointer' : 'not-allowed',
+                          opacity: shareLinks.copy ? 1 : 0.5,
+                          fontWeight: 600,
+                        }}
+                        title="copy link"
+                      >
+                        <span style={{ fontSize: '0.9rem' }}>{copied ? 'copied' : 'copy link'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -683,6 +849,32 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                     {formData.notes.length}/200
                   </p>
                 </div>
+              </div>
+
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', cursor: 'pointer', color: '#151B47' }}>
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => {
+                      setTermsAccepted(e.target.checked);
+                      if (validationErrors.terms) {
+                        setValidationErrors((prev) => ({ ...prev, terms: undefined }));
+                      }
+                    }}
+                    style={{ marginTop: '0.25rem', width: '18px', height: '18px' }}
+                  />
+                  <span style={{ fontSize: '0.95rem', lineHeight: 1.4 }}>
+                    i agree to the{' '}
+                    <Link href="/terms" target="_blank" style={{ color: '#F16F64', textDecoration: 'underline' }}>
+                      terms, yoga & fitness waiver, and media release
+                    </Link>
+                    .
+                  </span>
+                </label>
+                {validationErrors.terms && (
+                  <p style={{ color: '#f16f64', fontSize: '0.875rem', marginTop: '0.5rem' }}>{validationErrors.terms}</p>
+                )}
               </div>
 
               {submitError && (

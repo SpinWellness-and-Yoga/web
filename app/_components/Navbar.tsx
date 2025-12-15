@@ -33,7 +33,7 @@ export default function Navbar({ className }: NavbarProps) {
 
     hideTimerRef.current = window.setTimeout(() => {
       setIsScrollingDown(true);
-    }, 300);
+    }, 150);
   }, [clearHideTimer, mobileMenuOpen]);
 
   useEffect(() => {
@@ -116,10 +116,10 @@ export default function Navbar({ className }: NavbarProps) {
       <div className={styles.navInner}>
         <Link href="/" className={styles.brand} aria-label="home">
           <Image
-            src="/logos/SWAY-Primary-logo-(iteration).png"
+            src="/logos/SWAY-logomark-PNG.png"
             alt="Spinwellness & Yoga"
-            width={1260}
-            height={360}
+              width={760}
+              height={760}
             priority
             quality={95}
             style={{ background: 'transparent' }}
