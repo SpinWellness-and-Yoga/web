@@ -33,7 +33,7 @@ export default function Navbar({ className }: NavbarProps) {
 
     hideTimerRef.current = window.setTimeout(() => {
       setIsScrollingDown(true);
-    }, 300);
+    }, 150);
   }, [clearHideTimer, mobileMenuOpen]);
 
   useEffect(() => {
