@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import Navbar from "./_components/Navbar";
 import WaitlistCard from "./_components/WaitlistCard";
-import EventsPopup from "../components/EventsPopup";
 import { BuildingIcon, LightningIcon, HeartIcon, PlantIcon } from "./_components/Icons";
 import styles from "./page.module.css";
 
@@ -46,7 +45,6 @@ const stats = [
 export default function Home() {
   return (
     <div className={styles.shell}>
-      <EventsPopup />
       <Navbar />
 
       <main id="top" className={styles.main}>
@@ -169,19 +167,10 @@ export default function Home() {
       <footer className={styles.footer}>
         <div className={styles.footerInner}>
           <div className={styles.footerBrand}>
-            <Image
-              src="/logos/SWAY-Primary-logo-(iteration).png"
-              alt="Spinwellness & Yoga primary logo"
-              width={600}
-              height={180}
-              quality={90}
-              loading="lazy"
-            />
             <p>Spinwellness & Yoga — wellness, therapy, and culture design for modern teams.</p>
           </div>
           <div className={styles.footerMeta}>
             <span>© 2025 Spinwellness & Yoga. All rights reserved.</span>
-            <span>Launching globally · Rooted in Lagos & evergreen calm.</span>
           </div>
         </div>
       </footer>

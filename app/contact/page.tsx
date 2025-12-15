@@ -133,17 +133,10 @@ export default function ContactPage() {
       <footer className={styles.footer}>
         <div className={styles.footerInner}>
           <div className={styles.footerBrand}>
-            <Image
-              src="/logos/SWAY-Primary-logo-(iteration).png"
-              alt="Spinwellness & Yoga primary logo"
-              width={280}
-              height={80}
-            />
             <p>Spinwellness & Yoga — wellness, therapy, and culture design for modern teams.</p>
           </div>
           <div className={styles.footerMeta}>
             <span>© {new Date().getFullYear()} Spinwellness & Yoga. All rights reserved.</span>
-            <span>Launching globally · Rooted in Lagos & evergreen calm.</span>
           </div>
         </div>
       </footer>

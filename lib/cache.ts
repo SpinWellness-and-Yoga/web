@@ -44,6 +44,20 @@ class MemoryCache {
 
 export const cache = new MemoryCache();
 
+export async function cacheGetJson<T>(key: string): Promise<T | null> {
+  return cache.get<T>(key);
+}
+
+export async function cacheSetJson<T>(key: string, value: T, ttlSeconds: number): Promise<void> {
+  cache.set(key, value, ttlSeconds);
+}
+
+export async function cacheDel(keys: string[]): Promise<void> {
+  for (const key of keys) {
+    cache.delete(key);
+  }
+}
+
 // cleanup expired entries every 5 minutes
 setInterval(() => {
   const now = Date.now();

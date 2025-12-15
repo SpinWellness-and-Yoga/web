@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sendWaitlistNotification, sendWaitlistConfirmation } from "@/lib/email";
+import { sendWaitlistNotification, sendWaitlistConfirmation } from "../../../lib/email";
 
 function getEnvFromRequest(request: Request): any {
   const req = request as any;

@@ -36,10 +36,29 @@ export default function EventsPopup() {
   useEffect(() => {
     const hasSeenPopup = localStorage.getItem('events-popup-seen');
     if (!hasSeenPopup) {
-      const timer = setTimeout(() => {
+      const timer = window.setTimeout(() => {
         loadEvents();
       }, 3000);
-      return () => clearTimeout(timer);
+
+      const cancelPopup = () => {
+        window.clearTimeout(timer);
+        localStorage.setItem('events-popup-seen', 'true');
+        window.removeEventListener('scroll', cancelPopup);
+        window.removeEventListener('pointerdown', cancelPopup);
+        window.removeEventListener('keydown', cancelPopup);
+      };
+
+      // if the user interacts, do not interrupt navigation with a modal
+      window.addEventListener('scroll', cancelPopup, { passive: true });
+      window.addEventListener('pointerdown', cancelPopup, { passive: true });
+      window.addEventListener('keydown', cancelPopup);
+
+      return () => {
+        window.clearTimeout(timer);
+        window.removeEventListener('scroll', cancelPopup);
+        window.removeEventListener('pointerdown', cancelPopup);
+        window.removeEventListener('keydown', cancelPopup);
+      };
     }
   }, [loadEvents]);
 

@@ -1,8 +1,10 @@
 import { getSupabaseClient } from './supabase';
 import { logger } from './logger';
 import { generateSecureTicketNumber } from './ticket-generator';
-import { cache } from './cache';
+import { cacheDel, cacheGetJson, cacheSetJson } from './cache';
 import { CACHE_CONFIG } from './constants';
+
+const inflight = new Map<string, Promise<any>>();
 
 export interface Event {
   id: string;
@@ -40,62 +42,84 @@ export interface EventRegistration {
 
 export async function getAllEventsWithCounts(request?: Request): Promise<Event[]> {
   const cacheKey = 'events:all:with-counts';
-  const cached = cache.get<Event[]>(cacheKey);
+  const cached = await cacheGetJson<Event[]>(cacheKey);
   
   if (cached) {
     logger.debug('returning cached events list');
     return cached;
   }
 
-  const supabase = getSupabaseClient();
-  
-  if (!supabase) {
-    logger.error('supabase client unavailable');
-    return [];
+  const existing = inflight.get(cacheKey);
+  if (existing) {
+    return (await existing) as Event[];
   }
-  
-  try {
-    const { data, error } = await supabase
-      .from('events')
-      .select(`
-        *,
-        event_registrations(count)
-      `)
-      .eq('is_active', true)
-      .order('start_date', { ascending: true });
-    
-    if (error) {
-      logger.error('failed to fetch events with counts', error);
-      return [];
-    }
-    
-    if (!data) {
-      return [];
-    }
-    
-    const events = data.map(event => ({
-      id: event.id,
-      name: event.name,
-      description: event.description,
-      image_url: event.image_url,
-      start_date: event.start_date,
-      end_date: event.end_date,
-      location: event.location,
-      venue: event.venue,
-      capacity: event.capacity,
-      price: event.price,
-      is_active: event.is_active ? 1 : 0,
-      locations: event.locations,
-      created_at: event.created_at,
-      updated_at: event.updated_at,
-      registration_count: event.event_registrations?.[0]?.count || 0,
-    })) as Event[];
 
-    cache.set(cacheKey, events, CACHE_CONFIG.EVENTS_LIST_TTL);
-    return events;
+  const work = (async () => {
+    const supabase = getSupabaseClient();
+    
+    if (!supabase) {
+      logger.error('supabase client unavailable');
+      return [];
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select(`
+          *,
+          event_registrations(count)
+        `)
+        .eq('is_active', true)
+        .order('start_date', { ascending: true });
+      
+      if (error) {
+        logger.error('failed to fetch events with counts', error);
+        return [];
+      }
+      
+      if (!data) {
+        return [];
+      }
+      
+      const events = data.map(event => ({
+        id: event.id,
+        name: event.name,
+        description: event.description,
+        image_url: event.image_url,
+        start_date: event.start_date,
+        end_date: event.end_date,
+        location: event.location,
+        venue: event.venue,
+        capacity: event.capacity,
+        price: event.price,
+        is_active: event.is_active ? 1 : 0,
+        locations: event.locations,
+        created_at: event.created_at,
+        updated_at: event.updated_at,
+        registration_count: event.event_registrations?.[0]?.count || 0,
+      })) as Event[];
+
+      await cacheSetJson(cacheKey, events, CACHE_CONFIG.EVENTS_LIST_TTL);
+      return events;
+    } catch (error) {
+      logger.error('exception fetching events with counts', error);
+      return [];
+    } finally {
+      inflight.delete(cacheKey);
+    }
+  })();
+
+  inflight.set(cacheKey, work);
+  return await work;
+}
+
+// preload events into cache (call on app startup or warmup)
+export async function preloadEventsCache(): Promise<void> {
+  try {
+    await getAllEventsWithCounts();
+    logger.info('events cache preloaded');
   } catch (error) {
-    logger.error('exception fetching events with counts', error);
-    return [];
+    logger.warn('events cache preload failed', { error: error instanceof Error ? error.message : String(error) });
   }
 }
 
@@ -175,13 +199,19 @@ export async function getEventById(id: string, request?: Request): Promise<Event
 
 export async function getEventByIdWithCount(id: string, request?: Request): Promise<Event | null> {
   const cacheKey = `event:${id}:with-count`;
-  const cached = cache.get<Event>(cacheKey);
+  const cached = await cacheGetJson<Event>(cacheKey);
   
   if (cached) {
     logger.debug('returning cached event', { eventId: id });
     return cached;
   }
 
+  const existing = inflight.get(cacheKey);
+  if (existing) {
+    return (await existing) as Event | null;
+  }
+
+  const work = (async () => {
   const supabase = getSupabaseClient();
   
   if (!supabase) {
@@ -215,12 +245,18 @@ export async function getEventByIdWithCount(id: string, request?: Request): Prom
       registration_count: data.event_registrations?.[0]?.count || 0,
     } as Event;
 
-    cache.set(cacheKey, event, CACHE_CONFIG.EVENT_DETAIL_TTL);
+    await cacheSetJson(cacheKey, event, CACHE_CONFIG.EVENT_DETAIL_TTL);
     return event;
   } catch (error) {
     logger.error('exception fetching event by id', error, { eventId: id });
     return null;
+  } finally {
+    inflight.delete(cacheKey);
   }
+  })();
+
+  inflight.set(cacheKey, work);
+  return await work;
 }
 
 export async function getEventRegistrations(eventId: string, request?: Request): Promise<EventRegistration[]> {
@@ -373,8 +409,10 @@ export async function createEventRegistration(
     }
 
     // invalidate cache after successful registration
-    cache.invalidatePattern(`event:${registration.event_id}`);
-    cache.invalidatePattern('events:all');
+    await cacheDel([
+      `event:${registration.event_id}:with-count`,
+      'events:all:with-counts',
+    ]);
 
     logger.info('registration created successfully', { 
       eventId: registration.event_id, 

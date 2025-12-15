@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getAllEvents, getEventRegistrations } from '@/lib/events-storage';
-import { sendEventReminder } from '@/lib/email';
+import { getAllEvents, getEventRegistrations } from '../../../../lib/events-storage';
+import { sendEventReminder } from '../../../../lib/email';
 
 function getEnvFromRequest(request: Request): any {
   const req = request as any;
