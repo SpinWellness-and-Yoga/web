@@ -5,6 +5,14 @@ export function capitalizeWords(text: string): string {
     .join(' ');
 }
 
+export function normalizeEventCopy(text: string): string {
+  const input = (text ?? '').toString();
+  if (!input) return '';
+
+  return input
+    .replace(/\b2[-\s]?hour\s+session\b/gi, '90-minute session');
+}
+
 type EventDescriptionBlock =
   | { type: 'paragraph'; text: string }
   | { type: 'itinerary'; title: string; items: Array<{ duration: string; text: string }> };
@@ -67,7 +75,7 @@ function parseEventFlowItinerary(text: string): Array<{ duration: string; text: 
     if (explicit) {
       const minutes = Number.parseInt(explicit[1], 10);
       const duration = Number.isFinite(minutes) ? `${minutes}-minute` : 'duration';
-      const itemText = explicit[2].trim();
+      const itemText = normalizeEventCopy(explicit[2].trim());
       if (!/clean[-\s]?up\s+and\s+exit/i.test(itemText)) {
         items.push({ duration, text: itemText });
       }
@@ -75,8 +83,9 @@ function parseEventFlowItinerary(text: string): Array<{ duration: string; text: 
     }
 
     const inferred = inferDurationFromTimeRange(timeRange);
-    if (!/clean[-\s]?up\s+and\s+exit/i.test(rest)) {
-      items.push({ duration: inferred ?? 'duration', text: rest });
+    const normalizedRest = normalizeEventCopy(rest);
+    if (!/clean[-\s]?up\s+and\s+exit/i.test(normalizedRest)) {
+      items.push({ duration: inferred ?? 'duration', text: normalizedRest });
     }
   }
 
@@ -138,20 +147,15 @@ export function formatEventDescription(description: string): EventDescriptionBlo
       }
     }
 
-    blocks.push({ type: 'paragraph', text: paragraph });
+    blocks.push({ type: 'paragraph', text: normalizeEventCopy(paragraph) });
   }
 
   return blocks;
 }
 
 export function getEventAddress(location: string): string {
-  const locationLower = location.toLowerCase();
-  if (locationLower.includes('lagos')) {
-    return 'Alpha Fitness Studios, Centro Lekki Mall, Plot 65a Admiralty Way, Lekki Phase 1 Lagos, Nigeria';
-  } else if (locationLower.includes('ibadan')) {
-    return '16 Ilaro St, Old Bodija, Ibadan 200212, Oyo, Nigeria';
-  }
-  return '';
+  // using one canonical address as requested
+  return '16 Ilaro St, Old Bodija, Ibadan 200212, Oyo, Nigeria';
 }
 
 export function getMapsUrl(address: string): string {
