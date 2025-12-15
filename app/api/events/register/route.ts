@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createEventRegistration, checkDuplicateRegistration, getEventById } from '../../../../lib/events-storage';
 import { sendEventRegistrationNotification, sendEventRegistrationConfirmation } from '../../../../lib/email';
-import { getEventAddress } from '../../../../lib/utils';
+import { getEventAddress, getEventLocationLabel } from '../../../../lib/utils';
 import { validateRegistration, sanitizeRegistrationInput } from '../../../../lib/validation';
 import { checkRegistrationRateLimit, getClientIp } from '../../../../lib/rate-limit';
 import { generateIdempotencyKey } from '../../../../lib/ticket-generator';
@@ -139,21 +139,21 @@ export async function POST(request: Request) {
       status: 'confirmed',
     }, request);
 
-    const eventDate = new Date(event.start_date).toLocaleDateString('en-US', {
+    const eventDateOnly = new Date(event.start_date).toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
     });
+    const eventTime = '4:30 PM WAT';
+    const eventDate = `${eventDateOnly} at ${eventTime}`;
 
     // send emails asynchronously (non-blocking)
     Promise.all([
       sendEventRegistrationNotification({
         event_name: event.name,
         event_date: eventDate,
-        event_location: event.location,
+        event_location: getEventLocationLabel(event.location),
         name: registration.name,
         email: registration.email,
         phone_number: registration.phone_number,
@@ -166,9 +166,9 @@ export async function POST(request: Request) {
       }, env),
       sendEventRegistrationConfirmation({
         event_name: event.name,
-        event_date: eventDate,
-        event_location: event.location,
-        event_venue: event.venue,
+        event_date: eventDateOnly,
+        event_time: eventTime,
+        event_location: getEventLocationLabel(event.location),
         event_address: getEventAddress(event.location),
         name: registration.name,
         email: registration.email,

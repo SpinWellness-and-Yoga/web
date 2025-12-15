@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAllEvents, getEventRegistrations } from '../../../../lib/events-storage';
 import { sendEventReminder } from '../../../../lib/email';
+import { getEventLocationLabel } from '../../../../lib/utils';
 
 function getEnvFromRequest(request: Request): any {
   const req = request as any;
@@ -57,16 +58,13 @@ export async function GET(request: Request) {
         try {
           await sendEventReminder({
             event_name: event.name,
-            event_date: new Date(event.start_date).toLocaleDateString('en-US', {
+            event_date: `${new Date(event.start_date).toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
               month: 'long',
               day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-            }),
-            event_location: event.location,
-            event_venue: event.venue,
+            })} at 4:30 PM WAT`,
+            event_location: getEventLocationLabel(event.location),
             name: registration.name,
             email: registration.email,
             ticket_number: registration.ticket_number,
