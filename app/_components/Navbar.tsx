@@ -35,8 +35,10 @@ export default function Navbar({ className }: NavbarProps) {
 
   // close the mobile menu whenever the route changes
   useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
+    if (!mobileMenuOpen) return;
+    const t = setTimeout(() => setMobileMenuOpen(false), 0);
+    return () => clearTimeout(t);
+  }, [pathname, mobileMenuOpen]);
 
   return (
     <header className={`${styles.navbar} ${isScrollingDown ? styles.hidden : ''} ${className ?? ''}`}>
