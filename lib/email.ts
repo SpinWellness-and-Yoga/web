@@ -165,9 +165,9 @@ export function renderEventRegistrationConfirmationEmail(entry: {
 
   const emailBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="text-align: center; margin-bottom: 10px;">
-        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 400px; width: 100%; height: auto; display: block; margin: 0 auto 6px;" />
-        <h1 style="color: #151b47; font-size: 28px; margin: 0;">You're Registered!!</h1>
+      <div style="text-align: center; margin-bottom: 10px; padding-top: 14px;">
+        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 160px; width: 100%; height: auto; display: block; margin: 0 auto 6px;" />
+        <h1 style="color: #151b47; font-size: 28px; margin: 0; font-weight: 400;">You're Registered!!</h1>
       </div>
       
       <div style="background: #fef9f5; padding: 30px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #f16f64;">
