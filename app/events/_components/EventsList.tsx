@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import styles from '../../page.module.css';
 import { capitalizeWords, normalizeEventCopy } from '../../../lib/utils';
@@ -11,6 +11,73 @@ interface EventsListProps {
 }
 
 export default function EventsList({ events }: EventsListProps) {
+  const [eventsState, setEventsState] = useState<Event[]>(events);
+
+  useEffect(() => {
+    setEventsState(events);
+  }, [events]);
+
+  const applyRegistrationUpdate = useCallback((eventId: string, newCount?: number, delta?: number) => {
+    const id = String(eventId).trim();
+    if (!id) return;
+
+    setEventsState((prev) =>
+      prev.map((e) => {
+        if (String(e.id).trim() !== id) return e;
+
+        const current = e.registration_count ?? 0;
+        const next =
+          typeof newCount === 'number' ? newCount : current + (typeof delta === 'number' ? delta : 0);
+
+        const clamped = e.capacity > 0 ? Math.min(e.capacity, Math.max(0, next)) : Math.max(0, next);
+        return { ...e, registration_count: clamped };
+      })
+    );
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const onLocalUpdate = (ev: Event) => {
+      const anyEv = ev as any;
+      const detail = anyEv?.detail;
+      if (!detail || detail.type !== 'registration') return;
+      applyRegistrationUpdate(detail.eventId, detail.registration_count, detail.delta);
+    };
+
+    window.addEventListener('sway:registration', onLocalUpdate as any);
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      bc = new BroadcastChannel('sway:registration');
+      bc.onmessage = (message) => {
+        const data = (message?.data ?? {}) as any;
+        if (data?.type !== 'registration') return;
+        applyRegistrationUpdate(data.eventId, data.registration_count, data.delta);
+      };
+    }
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== 'sway:registration') return;
+      if (!e.newValue) return;
+      try {
+        const data = JSON.parse(e.newValue) as any;
+        if (data?.type !== 'registration') return;
+        applyRegistrationUpdate(data.eventId, data.registration_count, data.delta);
+      } catch {
+        // ignore
+      }
+    };
+
+    window.addEventListener('storage', onStorage);
+
+    return () => {
+      window.removeEventListener('sway:registration', onLocalUpdate as any);
+      window.removeEventListener('storage', onStorage);
+      if (bc) bc.close();
+    };
+  }, [applyRegistrationUpdate]);
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -21,7 +88,9 @@ export default function EventsList({ events }: EventsListProps) {
     });
   };
 
-  if (events.length === 0) {
+  const displayEvents = useMemo(() => eventsState, [eventsState]);
+
+  if (displayEvents.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '4rem' }}>
         <p>no events available at the moment. check back soon!</p>
@@ -35,7 +104,7 @@ export default function EventsList({ events }: EventsListProps) {
         maxWidth: '1200px', 
         margin: '0 auto',
       }} className={styles.eventsGrid}>
-        {events.map((event) => {
+        {displayEvents.map((event) => {
           const eventId = encodeURIComponent(String(event.id).trim());
           const href = `/events/${eventId}`;
 

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {Event} from '../../../../lib/events-storage';
 import {capitalizeWords, formatEventDescription, getEventAddress, getEventLocationLabel, getMapsUrl} from '../../../../lib/utils';
@@ -23,6 +24,7 @@ interface EventDetailClientProps {
 }
 
 export default function EventDetailClient({ event, eventId }: EventDetailClientProps) {
+  const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -51,6 +53,42 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
   }>({});
 
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const broadcastRegistration = useCallback((nextCount: number) => {
+    const payload = {
+      type: 'registration',
+      eventId: String(eventId).trim(),
+      registration_count: nextCount,
+      delta: 1,
+      ts: Date.now(),
+    };
+
+    try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('sway:registration', { detail: payload }));
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('sway:registration');
+        bc.postMessage(payload);
+        bc.close();
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('sway:registration', JSON.stringify(payload));
+      }
+    } catch {
+      // ignore
+    }
+  }, [eventId]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -145,7 +183,11 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
       if (response.ok) {
         setSubmitSuccess(true);
         setShowForm(false);
-        setRegistrationCount((c) => c + 1);
+        setRegistrationCount((c) => {
+          const next = c + 1;
+          broadcastRegistration(next);
+          return next;
+        });
         setTermsAccepted(false);
         setFormData({
           name: '',
@@ -157,6 +199,10 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
           needs_directions: false,
           notes: '',
         });
+
+        window.setTimeout(() => {
+          router.refresh();
+        }, 50);
       } else {
         const errorData = await response.json();
         const errorMessage = errorData.error || 'failed to register for event';
