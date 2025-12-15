@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import styles from '../../page.module.css';
-import { capitalizeWords } from '../../../lib/utils';
+import { capitalizeWords, normalizeEventCopy } from '../../../lib/utils';
 import { Event } from '../../../lib/events-storage';
 
 interface EventsListProps {
@@ -62,7 +62,7 @@ export default function EventsList({ events }: EventsListProps) {
               })()}
             </div>
             <p style={{ color: '#322216', marginBottom: '1.5rem', lineHeight: '1.6' }}>
-              {event.description.substring(0, 150)}...
+              {normalizeEventCopy(event.description).substring(0, 150)}...
             </p>
             <Link 
               href={href}

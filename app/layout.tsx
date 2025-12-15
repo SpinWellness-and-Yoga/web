@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { Viewport } from "next";
 import { Raleway, Quando } from "next/font/google";
 import "./globals.css";
 
@@ -42,6 +43,11 @@ export const metadata: Metadata = {
     description:
       "Holistic employee wellness programs and 1:1 therapy. Join the waitlist today.",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

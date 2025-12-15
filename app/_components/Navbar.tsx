@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -15,15 +15,45 @@ export default function Navbar({ className }: NavbarProps) {
   const [lastScrollY, setLastScrollY] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const hideTimerRef = useRef<number | null>(null);
+  const lastPathRef = useRef<string>(pathname);
+
+  const clearHideTimer = () => {
+    if (hideTimerRef.current !== null) {
+      window.clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  };
+
+  const scheduleAutoHide = () => {
+    clearHideTimer();
+    if (typeof window === 'undefined') return;
+    if (mobileMenuOpen) return;
+    if (window.scrollY <= 20) return;
+
+    hideTimerRef.current = window.setTimeout(() => {
+      setIsScrollingDown(true);
+    }, 300);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
 
+      // keep navbar visible near the top
+      if (currentScrollY <= 20) {
+        setIsScrollingDown(false);
+        clearHideTimer();
+        setLastScrollY(currentScrollY);
+        return;
+      }
+
       if (currentScrollY > lastScrollY && currentScrollY > 100) {
         setIsScrollingDown(true);
+        clearHideTimer();
       } else {
         setIsScrollingDown(false);
+        scheduleAutoHide();
       }
 
       setLastScrollY(currentScrollY);
@@ -31,14 +61,54 @@ export default function Navbar({ className }: NavbarProps) {
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  }, [lastScrollY, mobileMenuOpen]);
 
-  // close the mobile menu whenever the route changes
+  // hide after 2s of no activity when shown from scroll-up
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (mobileMenuOpen) return;
+    if (isScrollingDown) return;
+    if (window.scrollY <= 20) return;
+
+    const onActivity = () => {
+      if (mobileMenuOpen) return;
+      if (window.scrollY <= 20) return;
+      scheduleAutoHide();
+    };
+
+    window.addEventListener('pointerdown', onActivity, { passive: true });
+    window.addEventListener('keydown', onActivity);
+    window.addEventListener('touchstart', onActivity, { passive: true });
+    window.addEventListener('mousemove', onActivity, { passive: true });
+
+    // schedule once when becoming visible
+    scheduleAutoHide();
+
+    return () => {
+      window.removeEventListener('pointerdown', onActivity);
+      window.removeEventListener('keydown', onActivity);
+      window.removeEventListener('touchstart', onActivity);
+      window.removeEventListener('mousemove', onActivity);
+      clearHideTimer();
+    };
+  }, [isScrollingDown, mobileMenuOpen]);
+
+  // close the mobile menu on route change (but do not immediately close on open)
+  useEffect(() => {
+    const prev = lastPathRef.current;
+    lastPathRef.current = pathname;
+    if (!mobileMenuOpen) return;
+    if (prev === pathname) return;
+    const t = window.setTimeout(() => setMobileMenuOpen(false), 0);
+    return () => window.clearTimeout(t);
+  }, [pathname, mobileMenuOpen]);
+
+  // ensure navbar stays visible while the mobile menu is open
   useEffect(() => {
     if (!mobileMenuOpen) return;
-    const t = setTimeout(() => setMobileMenuOpen(false), 0);
-    return () => clearTimeout(t);
-  }, [pathname, mobileMenuOpen]);
+    setIsScrollingDown(false);
+    clearHideTimer();
+  }, [mobileMenuOpen]);
 
   return (
     <header className={`${styles.navbar} ${isScrollingDown ? styles.hidden : ''} ${className ?? ''}`}>
@@ -75,7 +145,15 @@ export default function Navbar({ className }: NavbarProps) {
         </button>
       </div>
 
-      <div className={`${styles.mobileMenu} ${mobileMenuOpen ? styles.open : ''}`}>
+      <div
+        className={styles.mobileMenu}
+        style={{
+          transform: mobileMenuOpen ? 'translateY(0)' : undefined,
+          opacity: mobileMenuOpen ? 1 : undefined,
+          pointerEvents: mobileMenuOpen ? 'auto' : undefined,
+        }}
+        aria-hidden={!mobileMenuOpen}
+      >
         <Link href="/#services" onClick={() => setMobileMenuOpen(false)}>
           Services
         </Link>

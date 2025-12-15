@@ -27,6 +27,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [registrationCount, setRegistrationCount] = useState<number>(event.registration_count ?? 0);
   
   const [formData, setFormData] = useState<RegistrationForm>({
     name: '',
@@ -95,8 +96,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
     setSubmitError(null);
     setValidationErrors({});
 
-    const registeredCount = event.registration_count ?? 0;
-    const spotsRemaining = event && event.capacity > 0 ? event.capacity - registeredCount : null;
+    const spotsRemaining = event && event.capacity > 0 ? event.capacity - registrationCount : null;
     
     if (spotsRemaining !== null && spotsRemaining <= 0) {
       setSubmitError('this event is sold out');
@@ -125,6 +125,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
       if (response.ok) {
         setSubmitSuccess(true);
         setShowForm(false);
+        setRegistrationCount((c) => c + 1);
         setFormData({
           name: '',
           gender: '',
@@ -234,8 +235,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
     );
   }
 
-  const registeredCount = event.registration_count ?? 0;
-  const spotsRemaining = event.capacity > 0 ? event.capacity - registeredCount : null;
+  const spotsRemaining = event.capacity > 0 ? event.capacity - registrationCount : null;
   const locationLabel = getEventLocationLabel(event.location);
 
   return (

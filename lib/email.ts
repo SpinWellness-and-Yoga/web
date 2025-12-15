@@ -100,8 +100,9 @@ export function renderEventRegistrationConfirmationEmail(entry: {
 }): { subject: string; html: string } {
   const logoUrl = 'https://spinwellnessandyoga.com/logos/SWAY-Primary-logo-(iteration).png';
   const siteBaseUrl = 'https://spinwellnessandyoga.com';
-  const mapsUrl = entry.event_address
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(entry.event_address)}`
+  const address = entry.event_address?.trim() || '';
+  const mapsUrl = address
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
     : '';
 
   const toTitleCase = (input: string) =>
@@ -185,7 +186,7 @@ export function renderEventRegistrationConfirmationEmail(entry: {
         <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Date:</strong> ${escapeHtml(entry.event_date)}</p>
         <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Time:</strong> ${escapeHtml(entry.event_time)}</p>
         <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.event_location)}</p>
-        ${entry.event_address ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Address:</strong> <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #ffffff; text-decoration: underline;">${escapeHtml(entry.event_address)}</a></p>` : ''}
+        ${address ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Address:</strong> <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #ffffff; text-decoration: underline;">${escapeHtml(address)}</a></p>` : ''}
       </div>
 
       ${(googleCalendarUrl || icsUrl) ? `
