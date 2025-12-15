@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import Navbar from '../_components/Navbar';
 import styles from './page.module.css';
 
 type FormStatus = 'idle' | 'loading' | 'success' | 'error';
@@ -60,28 +61,7 @@ export default function ContactPage() {
 
   return (
     <div className={styles.shell}>
-      <header className={styles.navbar}>
-        <div className={styles.navInner}>
-          <Link href="/" className={styles.brand}>
-            <Image
-              src="/logos/SWAY-Primary-logo-(iteration).png"
-              alt="Spinwellness & Yoga"
-              width={1260}
-              height={360}
-              priority
-              quality={95}
-              style={{ background: 'transparent' }}
-            />
-          </Link>
-          <nav className={styles.navLinks} aria-label="Primary">
-            <Link href="/#services">Services</Link>
-            <Link href="/#why">Why Us</Link>
-            <Link href="/events">Events</Link>
-            <Link href="/#waitlist">Waitlist</Link>
-            <Link href="/contact">Contact</Link>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       <main className={styles.main}>
         <section className={styles.hero}>
@@ -157,7 +137,7 @@ export default function ContactPage() {
               src="/logos/SWAY-Primary-logo-(iteration).png"
               alt="Spinwellness & Yoga primary logo"
               width={280}
-              height={380}
+              height={80}
             />
             <p>Spinwellness & Yoga — wellness, therapy, and culture design for modern teams.</p>
           </div>

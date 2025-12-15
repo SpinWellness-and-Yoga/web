@@ -135,7 +135,7 @@ export async function POST(request: Request) {
       email: sanitizedInput.email,
       location_preference: sanitizedInput.location_preference,
       needs_directions: needs_directions ? 1 : 0,
-      notes: sanitizedInput.notes || null,
+      notes: sanitizedInput.notes || undefined,
       status: 'confirmed',
     }, request);
 

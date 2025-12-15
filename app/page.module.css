@@ -11,10 +11,9 @@
   left: 0;
   right: 0;
   z-index: 50;
-  backdrop-filter: blur(10px);
-  background: linear-gradient(180deg, rgba(253, 247, 241, 0.95) 0%, rgba(248, 241, 234, 0.9) 100%);
+  background: transparent;
   border-bottom: none;
-  min-height: 60px;
+  min-height: auto;
   display: flex;
   align-items: center;
   transition: transform 0.3s ease, opacity 0.3s ease;
@@ -29,7 +28,7 @@
 .navInner {
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0.5rem 1.5rem;
+  padding: 0.25rem 1.5rem;
   display: flex;
   align-items: center;
   gap: 1.5rem;
@@ -39,13 +38,15 @@
 .brand {
   display: inline-flex;
   align-items: center;
-  height: 360px;
-  padding: 0.25rem 0;
+  height: auto;
+  padding: 0;
 }
 
 .brand img {
-  height: 100%;
+  height: auto;
   width: auto;
+  max-width: 1200px;
+  max-height: 140px;
   object-fit: contain;
   opacity: 1;
   filter: contrast(1.1);
@@ -109,10 +110,10 @@
 
 .mobileMenu {
   position: fixed;
-  top: 60px;
+  top: 140px;
   left: 0;
   right: 0;
-  background: linear-gradient(180deg, rgba(253, 247, 241, 0.98) 0%, rgba(248, 241, 234, 0.95) 100%);
+  background: rgba(253, 247, 241, 0.98);
   backdrop-filter: blur(10px);
   padding: 2rem 1.5rem;
   display: flex;
@@ -123,11 +124,13 @@
   transition: transform 0.3s ease, opacity 0.3s ease;
   z-index: 40;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  pointer-events: none;
 }
 
 .mobileMenu.open {
   transform: translateY(0);
   opacity: 1;
+  pointer-events: auto;
 }
 
 .mobileMenu a {
@@ -178,11 +181,11 @@
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 0 1.5rem 6rem;
-  padding-top: 380px;
+  padding-top: 130px;
 }
 
 .hero {
-  padding: clamp(4.5rem, 8vw, 6.5rem) 0 3.5rem;
+  padding: clamp(1.5rem, 3vw, 2.5rem) 0 3.5rem;
   animation: fadeIn 0.8s ease-out;
 }
 

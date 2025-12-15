@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import styles from '../../page.module.css';
 import { capitalizeWords, getEventAddress, getMapsUrl, formatEventDescription } from '@/lib/utils';
+import Navbar from '@/app/_components/Navbar';
 
 interface Event {
   id: string;
@@ -58,6 +59,7 @@ export default function EventDetailPage() {
 
   const [validationErrors, setValidationErrors] = useState<{
     phone_number?: string;
+    email?: string;
     notes?: string;
   }>({});
 
@@ -67,6 +69,8 @@ export default function EventDetailPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const loadEvent = async () => {
     try {
@@ -110,10 +114,16 @@ export default function EventDetailPage() {
   };
 
   const validateForm = (): boolean => {
-    const errors: { phone_number?: string; notes?: string } = {};
+    const errors: { phone_number?: string; email?: string; notes?: string } = {};
 
     if (!formData.phone_number || formData.phone_number.length < 10) {
       errors.phone_number = 'phone number must be at least 10 digits';
+    }
+
+    if (!formData.email || formData.email.trim().length === 0) {
+      errors.email = 'email is required';
+    } else if (!EMAIL_REGEX.test(formData.email.trim().toLowerCase())) {
+      errors.email = 'invalid email format';
     }
 
     if (formData.notes && formData.notes.length > 200) {
@@ -228,28 +238,7 @@ export default function EventDetailPage() {
   if (submitSuccess) {
     return (
       <div className={styles.shell} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <header className={styles.navbar}>
-          <div className={styles.navInner}>
-            <Link href="/" className={styles.brand}>
-              <Image
-                src="/logos/SWAY-Primary-logo-(iteration).png"
-                alt="Spinwellness & Yoga"
-                width={1260}
-                height={360}
-                priority
-                quality={95}
-                style={{ background: 'transparent' }}
-              />
-            </Link>
-            <nav className={styles.navLinks} aria-label="Primary">
-              <Link href="/#services">Services</Link>
-              <Link href="/#why">Why Us</Link>
-              <Link href="/events">Events</Link>
-              <Link href="/#waitlist">Waitlist</Link>
-              <Link href="/contact">Contact</Link>
-            </nav>
-          </div>
-        </header>
+        <Navbar />
 
         <main className={styles.main} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
           <div style={{ 
@@ -328,26 +317,7 @@ export default function EventDetailPage() {
 
   return (
     <div className={styles.shell} style={{ position: 'relative', overflow: showForm ? 'hidden' : 'auto' }}>
-      <header className={styles.navbar}>
-        <div className={styles.navInner}>
-          <Link href="/" className={styles.brand}>
-            <Image
-              src="/logos/SWAY-Primary-logo-(iteration).png"
-              alt="Spinwellness & Yoga"
-              width={600}
-              height={200}
-              priority
-            />
-          </Link>
-          <nav className={styles.navLinks} aria-label="Primary">
-            <Link href="/#services">Services</Link>
-            <Link href="/#why">Why Us</Link>
-            <Link href="/events">Events</Link>
-            <Link href="/#waitlist">Waitlist</Link>
-            <Link href="/contact">Contact</Link>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       <main className={styles.main} style={{ opacity: showForm ? 0.3 : 1, transition: 'opacity 0.3s ease', pointerEvents: showForm ? 'none' : 'auto' }}>
         <section className={styles.hero}>
@@ -670,7 +640,7 @@ export default function EventDetailPage() {
                   style={{
                     width: '100%',
                     padding: '1rem',
-                    border: '1px solid #DFD9D4',
+                    border: validationErrors.email ? '2px solid #f16f64' : '1px solid #DFD9D4',
                     borderRadius: '8px',
                     fontSize: '1rem',
                     transition: 'all 0.3s ease',
@@ -682,10 +652,15 @@ export default function EventDetailPage() {
                     e.target.style.boxShadow = '0 0 0 3px rgba(241, 111, 100, 0.1)';
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = '#DFD9D4';
+                    e.target.style.borderColor = validationErrors.email ? '#f16f64' : '#DFD9D4';
                     e.target.style.boxShadow = 'none';
                   }}
                 />
+                {validationErrors.email && (
+                  <p style={{ color: '#f16f64', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                    {validationErrors.email}
+                  </p>
+                )}
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>

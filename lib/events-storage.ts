@@ -201,7 +201,7 @@ export async function getEventByIdWithCount(id: string, request?: Request): Prom
       .single();
     
     if (error) {
-      logger.warn('event not found or error', error, { eventId: id });
+      logger.warn('event not found or error', { eventId: id, error: error.message });
       return null;
     }
     

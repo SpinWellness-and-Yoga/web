@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import Navbar from '../_components/Navbar';
 import styles from '../page.module.css';
 import { capitalizeWords } from '@/lib/utils';
 
@@ -59,28 +59,7 @@ export default function EventsPage() {
 
   return (
     <div className={styles.shell}>
-      <header className={styles.navbar}>
-        <div className={styles.navInner}>
-          <Link href="/" className={styles.brand}>
-            <Image
-              src="/logos/SWAY-Primary-logo-(iteration).png"
-              alt="Spinwellness & Yoga"
-              width={1260}
-              height={360}
-              priority
-              quality={95}
-              style={{ background: 'transparent' }}
-            />
-          </Link>
-          <nav className={styles.navLinks} aria-label="Primary">
-            <Link href="/#services">Services</Link>
-            <Link href="/#why">Why Us</Link>
-            <Link href="/events">Events</Link>
-            <Link href="/#waitlist">Waitlist</Link>
-            <Link href="/contact">Contact</Link>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       <main className={styles.main}>
         <section className={styles.hero}>

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import Navbar from "./_components/Navbar";
 import WaitlistCard from "./_components/WaitlistCard";
 import EventsPopup from "../components/EventsPopup";
 import { BuildingIcon, LightningIcon, HeartIcon, PlantIcon } from "./_components/Icons";
@@ -44,70 +44,10 @@ const stats = [
 ];
 
 export default function Home() {
-  const [isScrollingDown, setIsScrollingDown] = useState(false);
-  const [lastScrollY, setLastScrollY] = useState(0);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setIsScrollingDown(true);
-      } else {
-        setIsScrollingDown(false);
-      }
-      
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
-
   return (
     <div className={styles.shell}>
       <EventsPopup />
-      <header className={`${styles.navbar} ${isScrollingDown ? styles.hidden : ''}`}>
-        <div className={styles.navInner}>
-          <a href="#top" className={styles.brand}>
-            <Image
-              src="/logos/SWAY-Primary-logo-(iteration).png"
-              alt="Spinwellness & Yoga primary logo"
-              width={1260}
-              height={360}
-              priority
-              quality={95}
-              style={{ background: 'transparent' }}
-            />
-          </a>
-          <nav className={styles.navLinks} aria-label="Primary">
-            <a href="#services">Services</a>
-            <a href="#why">Why Us</a>
-            <Link href="/events">Events</Link>
-            <a href="#waitlist">Waitlist</a>
-            <a href="/contact">Contact</a>
-          </nav>
-
-          <button 
-            className={styles.hamburger}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            <span></span>
-            <span></span>
-            <span></span>
-          </button>
-        </div>
-
-        <div className={`${styles.mobileMenu} ${mobileMenuOpen ? styles.open : ''}`}>
-          <a href="#services" onClick={() => setMobileMenuOpen(false)}>Services</a>
-          <a href="#why" onClick={() => setMobileMenuOpen(false)}>Why Us</a>
-          <Link href="/events" onClick={() => setMobileMenuOpen(false)}>Events</Link>
-          <a href="#waitlist" onClick={() => setMobileMenuOpen(false)}>Waitlist</a>
-          <Link href="/contact" onClick={() => setMobileMenuOpen(false)}>Contact</Link>
-        </div>
-      </header>
+      <Navbar />
 
       <main id="top" className={styles.main}>
         <section className={styles.hero}>
@@ -147,9 +87,9 @@ export default function Home() {
                 </div>
               </div>
               <div className={styles.heroActions}>
-                <a href="/contact" className={styles.primaryButton}>
+                <Link href="/contact" className={styles.primaryButton}>
                   Contact Us
-                </a>
+                </Link>
               </div>
             </div>
             <aside className={styles.heroCard}>
@@ -232,8 +172,8 @@ export default function Home() {
             <Image
               src="/logos/SWAY-Primary-logo-(iteration).png"
               alt="Spinwellness & Yoga primary logo"
-              width={420}
-              height={120}
+              width={600}
+              height={180}
               quality={90}
               loading="lazy"
             />
