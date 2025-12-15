@@ -1,36 +1,36 @@
 import { NextResponse } from 'next/server';
-import { getAllEvents, getEventRegistrations } from '@/lib/events-storage';
+import { getAllEventsWithCounts } from '@/lib/events-storage';
+import { logger } from '@/lib/logger';
+
+export const revalidate = 300;
 
 export async function GET(request: Request) {
+  const startTime = Date.now();
+
   try {
-    const events = await getAllEvents(request);
+    const events = await getAllEventsWithCounts(request);
+    const duration = Date.now() - startTime;
     
-    // fetch registration counts for each event
-    const eventsWithRegistrations = await Promise.all(
-      events.map(async (event) => {
-        const registrations = await getEventRegistrations(event.id, request);
-        return {
-          ...event,
-          registrations,
-          registration_count: registrations.length,
-        };
-      })
-    );
+    logger.debug('events list fetched', { count: events.length, duration: `${duration}ms` });
     
-    return NextResponse.json(eventsWithRegistrations || [], { 
+    return NextResponse.json(events || [], { 
       status: 200,
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        'X-Response-Time': `${duration}ms`,
       }
     });
   } catch (error) {
-    console.error('[events API] Error fetching events');
+    const duration = Date.now() - startTime;
+    logger.error('failed to fetch events', error, { duration: `${duration}ms` });
+    
     return NextResponse.json([], { 
       status: 200,
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
       }
     });
   }
 }
-

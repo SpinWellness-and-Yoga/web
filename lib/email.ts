@@ -1,4 +1,6 @@
-import {Resend} from 'resend';
+import { Resend } from 'resend';
+import { logger } from './logger';
+import { EMAIL_CONFIG } from './constants';
 
 function getEnvVar(key: string, env?: any): string | undefined {
   if (typeof process !== 'undefined' && process.env?.[key]) {
@@ -23,6 +25,194 @@ function getEnvVar(key: string, env?: any): string | undefined {
   return undefined;
 }
 
+function escapeHtml(text: string): string {
+  const map: { [key: string]: string } = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+}
+
+async function sendEmailWithRetry(
+  resend: Resend,
+  payload: any,
+  emailType: string
+): Promise<void> {
+  let lastError: Error | undefined;
+
+  for (let attempt = 1; attempt <= EMAIL_CONFIG.RETRY_ATTEMPTS; attempt++) {
+    try {
+      const result = await Promise.race([
+        resend.emails.send(payload),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('email send timeout')), EMAIL_CONFIG.SEND_TIMEOUT_MS)
+        )
+      ]) as any;
+      
+      if (result?.error) {
+        throw new Error(result.error.message || result.error.name || 'email send failed');
+      }
+      
+      if (result?.data?.id) {
+        logger.info(`${emailType} email sent`, { 
+          emailId: result.data.id, 
+          to: payload.to,
+          attempt,
+        });
+        return;
+      }
+      
+      throw new Error('unexpected email response format');
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      if (attempt < EMAIL_CONFIG.RETRY_ATTEMPTS) {
+        logger.warn(`${emailType} email send failed, retrying`, { 
+          attempt, 
+          error: lastError.message,
+        });
+        await new Promise(resolve => setTimeout(resolve, EMAIL_CONFIG.RETRY_DELAY_MS * attempt));
+      }
+    }
+  }
+
+  logger.error(`${emailType} email failed after retries`, lastError, { 
+    attempts: EMAIL_CONFIG.RETRY_ATTEMPTS,
+    to: payload.to,
+  });
+}
+
+export function renderEventRegistrationConfirmationEmail(entry: {
+  event_name: string;
+  event_date: string;
+  event_location: string;
+  event_venue?: string;
+  event_address?: string;
+  event_start_iso?: string;
+  event_end_iso?: string;
+  name: string;
+  email: string;
+  ticket_number: string;
+  location_preference: string;
+}): { subject: string; html: string } {
+  const logoUrl = 'https://spinwellnessandyoga.com/logos/SWAY-Primary-logo-(iteration).png';
+  const siteBaseUrl = 'https://spinwellnessandyoga.com';
+  const mapsUrl = entry.event_address
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(entry.event_address)}`
+    : '';
+
+  const toTitleCase = (input: string) =>
+    input
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+
+  const eventNameTitle = toTitleCase(entry.event_name);
+
+  const toGoogleCalendarDate = (iso: string) => {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return '';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return [
+      date.getUTCFullYear(),
+      pad(date.getUTCMonth() + 1),
+      pad(date.getUTCDate()),
+      'T',
+      pad(date.getUTCHours()),
+      pad(date.getUTCMinutes()),
+      pad(date.getUTCSeconds()),
+      'Z',
+    ].join('');
+  };
+
+  const getGoogleCalendarUrl = () => {
+    if (!entry.event_start_iso) return '';
+    const start = toGoogleCalendarDate(entry.event_start_iso);
+    const end = entry.event_end_iso ? toGoogleCalendarDate(entry.event_end_iso) : '';
+    if (!start || !end) return '';
+
+    const details = `Ticket Number: ${entry.ticket_number}`;
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: eventNameTitle,
+      dates: `${start}/${end}`,
+      details,
+      location: entry.event_address || entry.event_location,
+    });
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  };
+
+  const getIcsUrl = () => {
+    if (!entry.event_start_iso || !entry.event_end_iso) return '';
+    const params = new URLSearchParams({
+      title: eventNameTitle,
+      start: entry.event_start_iso,
+      end: entry.event_end_iso,
+      location: entry.event_address || entry.event_location,
+      description: `Ticket Number: ${entry.ticket_number}`,
+    });
+    return `${siteBaseUrl}/api/calendar/ics?${params.toString()}`;
+  };
+
+  const googleCalendarUrl = getGoogleCalendarUrl();
+  const icsUrl = getIcsUrl();
+
+  const emailBody = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; margin-bottom: 10px;">
+        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 400px; width: 100%; height: auto; display: block; margin: 0 auto 6px;" />
+        <h1 style="color: #151b47; font-size: 28px; margin: 0;">You're Registered!!</h1>
+      </div>
+      
+      <div style="background: #fef9f5; padding: 30px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #f16f64;">
+        <p style="margin: 0 0 15px; font-size: 16px;">Hi ${escapeHtml(entry.name)},</p>
+        <p style="margin: 0 0 15px; font-size: 16px;">Thank you for registering for <strong>${escapeHtml(eventNameTitle)}</strong>! We're excited to have you join us.</p>
+        <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #f16f64;">
+          <p style="margin: 0 0 10px; font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 1px;">Your Ticket Number</p>
+          <p style="margin: 0; font-size: 24px; font-weight: bold; color: #f16f64; letter-spacing: 2px;">${escapeHtml(entry.ticket_number)}</p>
+        </div>
+        <p style="margin: 15px 0; font-size: 16px;">Please save this email and bring your ticket number with you to the event.</p>
+        <p style="margin: 0 0 15px; font-size: 16px;">We look forward to seeing you there!</p>
+      </div>
+
+      <div style="background: linear-gradient(135deg, #f16f64 0%, #e85a50 100%); padding: 26px; border-radius: 12px; margin-bottom: 30px; color: white; text-align: left;">
+        <h2 style="color: white; margin: 0 0 14px; font-size: 20px;">Event Details</h2>
+        <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Date:</strong> ${escapeHtml(entry.event_date)}</p>
+        <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.event_location)}</p>
+        ${entry.event_venue ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Venue:</strong> ${escapeHtml(entry.event_venue)}</p>` : ''}
+        ${entry.event_address ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Address:</strong> <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #ffffff; text-decoration: underline;">${escapeHtml(entry.event_address)}</a></p>` : ''}
+      </div>
+
+      ${(googleCalendarUrl || icsUrl) ? `
+      <div style="margin-bottom: 30px; text-align: left;">
+        <div style="display: inline-flex; gap: 12px; flex-wrap: wrap;">
+          ${googleCalendarUrl ? `<a href="${googleCalendarUrl}" style="display: inline-block; background: #151b47; color: #ffffff; text-decoration: none; padding: 12px 16px; border-radius: 10px; font-weight: 600; font-size: 14px;">Add to Google Calendar</a>` : ''}
+          ${icsUrl ? `<a href="${icsUrl}" style="display: inline-block; background: #ffffff; color: #151b47; text-decoration: none; padding: 12px 16px; border-radius: 10px; font-weight: 600; font-size: 14px; border: 2px solid #151b47;">Download .ics</a>` : ''}
+        </div>
+      </div>
+      ` : ''}
+
+      <div style="margin-bottom: 18px; text-align: left;">
+        <p style="margin: 0; font-size: 14px; color: #666;">For enquiries, email <a href="mailto:admin@spinwellnessandyoga.com" style="color: #f16f64; text-decoration: underline;">admin@spinwellnessandyoga.com</a>.</p>
+      </div>
+      
+      <div style="text-align: center; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+        <p style="color: #666; font-size: 14px; margin: 0;">spinwellness & yoga | transform employee wellness</p>
+      </div>
+    </div>
+  `;
+
+  return {
+    subject: `Registration Confirmed: ${eventNameTitle}`,
+    html: emailBody,
+  };
+}
+
 export async function sendWaitlistNotification(entry: {
   full_name: string;
   email: string;
@@ -34,37 +224,30 @@ export async function sendWaitlistNotification(entry: {
   const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellnessandyoga.com';
 
   if (!resendApiKey) {
-    console.error('[sendWaitlistNotification] RESEND_API_KEY not found');
+    logger.error('resend api key not found for waitlist notification');
     return;
   }
 
   const emailBody = `
     <h2>New Waitlist Entry</h2>
-    <p><strong>Name:</strong> ${entry.full_name}</p>
-    <p><strong>Email:</strong> ${entry.email}</p>
-    <p><strong>Company:</strong> ${entry.company}</p>
-    ${entry.team_size ? `<p><strong>Team Size:</strong> ${entry.team_size}</p>` : ''}
-    ${entry.priority ? `<p><strong>Priority:</strong> ${entry.priority}</p>` : ''}
+    <p><strong>Name:</strong> ${escapeHtml(entry.full_name)}</p>
+    <p><strong>Email:</strong> ${escapeHtml(entry.email)}</p>
+    <p><strong>Company:</strong> ${escapeHtml(entry.company)}</p>
+    ${entry.team_size ? `<p><strong>Team Size:</strong> ${escapeHtml(entry.team_size)}</p>` : ''}
+    ${entry.priority ? `<p><strong>Priority:</strong> ${escapeHtml(entry.priority)}</p>` : ''}
     <hr>
-    <p style="color: #666; font-size: 0.9em;">This is an automated notification from the Spinwellness waitlist.</p>
+    <p style="color: #666; font-size: 0.9em;">automated notification from spinwellness waitlist</p>
   `;
 
   const emailPayload = {
     from: 'Spinwellness Waitlist <admin@spinwellnessandyoga.com>',
     to: [adminEmail],
-    subject: `New Waitlist Entry: ${entry.company}`,
+    subject: `new waitlist entry: ${entry.company}`,
     html: emailBody,
   };
-
-  try {
+    
     const resend = new Resend(resendApiKey);
-    const result = await resend.emails.send(emailPayload);
-    if (result.error) {
-      console.error('[sendWaitlistNotification] Resend API error:', result.error);
-    }
-  } catch (error) {
-    console.error('[sendWaitlistNotification] Exception caught:', error);
-  }
+  await sendEmailWithRetry(resend, emailPayload, 'waitlist-notification');
 }
 
 export async function sendWaitlistConfirmation(entry: {
@@ -84,7 +267,7 @@ export async function sendWaitlistConfirmation(entry: {
   const emailBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 350px; width: 100%; height: auto; margin-bottom: 20px;" />
+        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 400px; width: 100%; height: auto; display: block; margin: 0 auto 20px;" />
         <h1 style="color: #151b47; font-size: 28px; margin: 0 0 10px;">Welcome to the Waitlist!</h1>
       </div>
       
@@ -180,7 +363,7 @@ export async function sendContactConfirmation(entry: {
   const emailBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 350px; width: 100%; height: auto; margin-bottom: 20px;" />
+        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 400px; width: 100%; height: auto; display: block; margin: 0 auto 20px;" />
         <h1 style="color: #151b47; font-size: 28px; margin: 0 0 10px;">Thank you for reaching out!</h1>
       </div>
       
@@ -232,74 +415,44 @@ export async function sendEventRegistrationNotification(entry: {
   const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellnessandyoga.com';
 
   if (!adminEmail || !adminEmail.includes('@')) {
-    console.error('[sendEventRegistrationNotification] Invalid ADMIN_EMAIL:', adminEmail);
+    logger.error('invalid admin email', { adminEmail });
     return;
   }
 
   if (!resendApiKey) {
-    console.error('[sendEventRegistrationNotification] RESEND_API_KEY not found');
+    logger.error('resend api key not found for registration notification');
     return;
   }
 
-  const escapeHtml = (text: string) => {
-    const map: { [key: string]: string } = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;',
-    };
-    return text.replace(/[&<>"']/g, (m) => map[m]);
-  };
-
   const emailBody = `
-    <h2>New Event Registration</h2>
+    <h2>new event registration</h2>
     <h3>${escapeHtml(entry.event_name)}</h3>
-    <p><strong>Event Date:</strong> ${escapeHtml(entry.event_date)}</p>
-    <p><strong>Event Location:</strong> ${escapeHtml(entry.event_location)}</p>
+    <p><strong>event date:</strong> ${escapeHtml(entry.event_date)}</p>
+    <p><strong>event location:</strong> ${escapeHtml(entry.event_location)}</p>
     <hr>
-    <h3>Registration Details</h3>
-    <p><strong>Name:</strong> ${escapeHtml(entry.name)}</p>
-    <p><strong>Email:</strong> ${escapeHtml(entry.email)}</p>
-    <p><strong>Phone:</strong> ${escapeHtml(entry.phone_number)}</p>
-    <p><strong>Gender:</strong> ${escapeHtml(entry.gender)}</p>
-    <p><strong>Profession:</strong> ${escapeHtml(entry.profession)}</p>
-    <p><strong>Location Preference:</strong> ${escapeHtml(entry.location_preference)}</p>
-    <p><strong>Needs Directions:</strong> ${entry.needs_directions ? 'Yes' : 'No'}</p>
-    <p><strong>Ticket Number:</strong> ${escapeHtml(entry.ticket_number)}</p>
-    ${entry.notes ? `<p><strong>Notes:</strong> ${escapeHtml(entry.notes)}</p>` : ''}
+    <h3>registration details</h3>
+    <p><strong>name:</strong> ${escapeHtml(entry.name)}</p>
+    <p><strong>email:</strong> ${escapeHtml(entry.email)}</p>
+    <p><strong>phone:</strong> ${escapeHtml(entry.phone_number)}</p>
+    <p><strong>gender:</strong> ${escapeHtml(entry.gender)}</p>
+    <p><strong>profession:</strong> ${escapeHtml(entry.profession)}</p>
+    <p><strong>location preference:</strong> ${escapeHtml(entry.location_preference)}</p>
+    <p><strong>needs directions:</strong> ${entry.needs_directions ? 'yes' : 'no'}</p>
+    <p><strong>ticket number:</strong> ${escapeHtml(entry.ticket_number)}</p>
+    ${entry.notes ? `<p><strong>notes:</strong> ${escapeHtml(entry.notes)}</p>` : ''}
     <hr>
-    <p style="color: #666; font-size: 0.9em;">This is an automated notification from the Spinwellness event registration system.</p>
+    <p style="color: #666; font-size: 0.9em;">automated notification from spinwellness event registration</p>
   `;
 
   const emailPayload = {
     from: 'Spinwellness Events <admin@spinwellnessandyoga.com>',
     to: [adminEmail],
-    subject: `New Registration: ${entry.event_name} - ${entry.name}`,
+    subject: `new registration: ${entry.event_name} - ${entry.name}`,
     html: emailBody,
   };
 
-  try {
-    const resend = new Resend(resendApiKey);
-    const result = await Promise.race([
-      resend.emails.send(emailPayload),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('email send timeout after 10s')), 10000)
-      )
-    ]) as any;
-    
-    if (result?.error) {
-      console.log('[sendEventRegistrationNotification] Email sending failed (non-blocking):', result.error.message || result.error.name || JSON.stringify(result.error));
-    } else if (result?.data?.id) {
-      console.log('[sendEventRegistrationNotification] Notification email sent successfully to:', adminEmail, 'id:', result.data.id);
-    } else {
-      console.log('[sendEventRegistrationNotification] Email sent but unexpected response format:', result);
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'unknown error';
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    console.log('[sendEventRegistrationNotification] Email sending failed (non-blocking):', errorMessage, errorStack ? `\nStack: ${errorStack}` : '');
-  }
+  const resend = new Resend(resendApiKey);
+  await sendEmailWithRetry(resend, emailPayload, 'registration-notification');
 }
 
 export async function sendEventRegistrationConfirmation(entry: {
@@ -307,6 +460,7 @@ export async function sendEventRegistrationConfirmation(entry: {
   event_date: string;
   event_location: string;
   event_venue?: string;
+  event_address?: string;
   name: string;
   email: string;
   ticket_number: string;
@@ -315,82 +469,21 @@ export async function sendEventRegistrationConfirmation(entry: {
   const resendApiKey = getEnvVar('RESEND_API_KEY', env);
 
   if (!resendApiKey) {
-    console.error('[sendEventRegistrationConfirmation] RESEND_API_KEY not found');
+    logger.error('resend api key not found for registration confirmation');
     return;
   }
 
-  const logoUrl = 'https://spinwellnessandyoga.com/logos/SWAY-Primary-logo-(iteration).png';
-
-  const escapeHtml = (text: string) => {
-    const map: { [key: string]: string } = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;',
-    };
-    return text.replace(/[&<>"']/g, (m) => map[m]);
-  };
-
-  const emailBody = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="text-align: center; margin-bottom: 30px;">
-        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 350px; width: 100%; height: auto; margin-bottom: 20px;" />
-        <h1 style="color: #151b47; font-size: 28px; margin: 0 0 10px;">You&apos;re Registered!</h1>
-      </div>
-      
-      <div style="background: linear-gradient(135deg, #f16f64 0%, #e85a50 100%); padding: 30px; border-radius: 12px; margin-bottom: 30px; color: white; text-align: center;">
-        <h2 style="color: white; margin: 0 0 15px; font-size: 24px;">${escapeHtml(entry.event_name)}</h2>
-        <p style="color: rgba(255, 255, 255, 0.95); margin: 5px 0; font-size: 16px;"><strong>Date:</strong> ${escapeHtml(entry.event_date)}</p>
-        <p style="color: rgba(255, 255, 255, 0.95); margin: 5px 0; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.event_location)}</p>
-        ${entry.event_venue ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 5px 0; font-size: 16px;"><strong>Venue:</strong> ${escapeHtml(entry.event_venue)}</p>` : ''}
-      </div>
-      
-      <div style="background: #fef9f5; padding: 30px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #f16f64;">
-        <p style="margin: 0 0 15px; font-size: 16px;">Hi ${escapeHtml(entry.name)},</p>
-        <p style="margin: 0 0 15px; font-size: 16px;">Thank you for registering for <strong>${escapeHtml(entry.event_name)}</strong>! We&apos;re excited to have you join us.</p>
-        <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #f16f64;">
-          <p style="margin: 0 0 10px; font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 1px;">Your Ticket Number</p>
-          <p style="margin: 0; font-size: 24px; font-weight: bold; color: #f16f64; letter-spacing: 2px;">${escapeHtml(entry.ticket_number)}</p>
-        </div>
-        <p style="margin: 15px 0; font-size: 16px;">Please save this email and bring your ticket number with you to the event.</p>
-        <p style="margin: 0; font-size: 16px;">We look forward to seeing you there!</p>
-      </div>
-      
-      <div style="text-align: center; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-        <p style="color: #666; font-size: 14px; margin: 0;">Spinwellness & Yoga | Transform Employee Wellness</p>
-      </div>
-    </div>
-  `;
+  const rendered = renderEventRegistrationConfirmationEmail(entry);
 
   const emailPayload = {
     from: 'Spinwellness & Yoga <admin@spinwellnessandyoga.com>',
     to: [entry.email],
-    subject: `Registration Confirmed: ${entry.event_name}`,
-    html: emailBody,
+    subject: rendered.subject,
+    html: rendered.html,
   };
 
-  try {
-    const resend = new Resend(resendApiKey);
-    const result = await Promise.race([
-      resend.emails.send(emailPayload),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('email send timeout after 10s')), 10000)
-      )
-    ]) as any;
-    
-    if (result?.error) {
-      console.log('[sendEventRegistrationConfirmation] Email sending failed (non-blocking):', result.error.message || result.error.name || JSON.stringify(result.error));
-    } else if (result?.data?.id) {
-      console.log('[sendEventRegistrationConfirmation] Confirmation email sent successfully to:', entry.email, 'id:', result.data.id);
-    } else {
-      console.log('[sendEventRegistrationConfirmation] Email sent but unexpected response format:', result);
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'unknown error';
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    console.log('[sendEventRegistrationConfirmation] Email sending failed (non-blocking):', errorMessage, errorStack ? `\nStack: ${errorStack}` : '');
-  }
+  const resend = new Resend(resendApiKey);
+  await sendEmailWithRetry(resend, emailPayload, 'registration-confirmation');
 }
 
 export async function sendEventReminder(entry: {
@@ -410,7 +503,7 @@ export async function sendEventReminder(entry: {
     return;
   }
 
-  const logoUrl = 'https://spinwellnessandyoga.com/logos/SWAY-Primary-logo-(iteration).png';
+  const logoUrl = 'https://spinwellnessandyoga.com/logos/email-logo.png';
 
   const escapeHtml = (text: string) => {
     const map: { [key: string]: string } = {
@@ -426,7 +519,7 @@ export async function sendEventReminder(entry: {
   const emailBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 350px; width: 100%; height: auto; margin-bottom: 20px;" />
+        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 400px; width: 100%; height: auto; display: block; margin: 0 auto 20px;" />
         <h1 style="color: #151b47; font-size: 28px; margin: 0 0 10px;">Event Reminder</h1>
       </div>
       

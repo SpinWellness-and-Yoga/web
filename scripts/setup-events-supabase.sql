@@ -58,3 +58,4 @@ CREATE POLICY "event registrations are insertable by everyone" ON event_registra
 CREATE POLICY "admins can view all registrations" ON event_registrations
   FOR SELECT USING (true);
 
+

@@ -1,17 +1,12 @@
-import type { Metadata } from "next";
+'use client';
+
 import Image from "next/image";
+import Link from "next/link";
+import Navbar from "./_components/Navbar";
 import WaitlistCard from "./_components/WaitlistCard";
 import EventsPopup from "../components/EventsPopup";
 import { BuildingIcon, LightningIcon, HeartIcon, PlantIcon } from "./_components/Icons";
 import styles from "./page.module.css";
-
-export const dynamic = 'force-dynamic';
-
-export const metadata: Metadata = {
-  title: "Spinwellness & Yoga | Transform Employee Wellness",
-  description:
-    "A holistic wellness platform for modern workplaces. Employee wellness, productivity, wellbeing, and company wellness culture reimagined.",
-};
 
 const services = [
   {
@@ -52,27 +47,7 @@ export default function Home() {
   return (
     <div className={styles.shell}>
       <EventsPopup />
-      <header className={styles.navbar}>
-        <div className={styles.navInner}>
-          <a href="#top" className={styles.brand}>
-            <Image
-              src="/logos/SWAY-Primary-logo-(iteration).png"
-              alt="Spinwellness & Yoga primary logo"
-              width={600}
-              height={200}
-              priority
-            />
-          </a>
-          <nav className={styles.navLinks} aria-label="Primary">
-            <a href="#services">Services</a>
-            <a href="#why">Why Us</a>
-            <a href="/events">Events</a>
-            <a href="#waitlist">Waitlist</a>
-            <a href="/contact">Contact</a>
-          </nav>
-
-        </div>
-      </header>
+      <Navbar />
 
       <main id="top" className={styles.main}>
         <section className={styles.hero}>
@@ -112,9 +87,9 @@ export default function Home() {
                 </div>
               </div>
               <div className={styles.heroActions}>
-                <a href="/contact" className={styles.primaryButton}>
+                <Link href="/contact" className={styles.primaryButton}>
                   Contact Us
-                </a>
+                </Link>
               </div>
             </div>
             <aside className={styles.heroCard}>
@@ -197,8 +172,10 @@ export default function Home() {
             <Image
               src="/logos/SWAY-Primary-logo-(iteration).png"
               alt="Spinwellness & Yoga primary logo"
-              width={280}
-              height={380}
+              width={600}
+              height={180}
+              quality={90}
+              loading="lazy"
             />
             <p>Spinwellness & Yoga — wellness, therapy, and culture design for modern teams.</p>
           </div>

@@ -19,6 +19,8 @@ function getEnvFromRequest(request: Request): any {
   return undefined;
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function POST(request: Request) {
   try {
     const env = getEnvFromRequest(request) || process.env;
@@ -29,29 +31,31 @@ export async function POST(request: Request) {
 
     if (!name || !email || !message) {
       return NextResponse.json(
-        { success: false, error: "Name, email, and message are required" },
+        { success: false, error: "name, email, and message are required" },
         { status: 400 }
       );
     }
 
-    sendContactNotification({ name, email, message }, env).catch(() => {
-      console.error('[contact POST] Contact notification failed');
-    });
-    
-    sendContactConfirmation({ name, email }, env).catch(() => {
-      console.error('[contact POST] Contact confirmation failed');
-    });
+    if (!EMAIL_REGEX.test(email)) {
+      return NextResponse.json(
+        { success: false, error: "invalid email format" },
+        { status: 400 }
+      );
+    }
+
+    Promise.all([
+      sendContactNotification({ name, email, message }, env),
+      sendContactConfirmation({ name, email }, env),
+    ]).catch(() => {});
 
     return NextResponse.json(
       {
         success: true,
-        message: "Message sent successfully",
+        message: "message sent successfully",
       },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('[contact POST] Error');
-    return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
+  } catch {
+    return NextResponse.json({ success: false, error: "internal server error" }, { status: 500 });
   }
 }
-

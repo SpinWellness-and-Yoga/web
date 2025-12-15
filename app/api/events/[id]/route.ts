@@ -1,50 +1,47 @@
 import { NextResponse } from 'next/server';
-import { getEventById, getEventRegistrations } from '@/lib/events-storage';
+import { getEventByIdWithCount } from '@/lib/events-storage';
+import { logger } from '@/lib/logger';
 
-function getEnvFromRequest(request: Request): any {
-  const req = request as any;
-  
-  if (req.env) return req.env;
-  if (req.ctx?.env) return req.ctx.env;
-  if (req.cloudflare?.env) return req.cloudflare.env;
-  if (req.runtime?.env) return req.runtime.env;
-  
-  if (typeof globalThis !== 'undefined') {
-    const g = globalThis as any;
-    if (g.env) return g.env;
-  }
-  
-  return undefined;
-}
+export const revalidate = 180;
 
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
+  const startTime = Date.now();
+  let eventId = 'unknown';
+
   try {
     const params = await context.params;
-    const event = await getEventById(params.id, request);
+    eventId = params.id;
+    
+    const event = await getEventByIdWithCount(eventId, request);
+    const duration = Date.now() - startTime;
     
     if (!event) {
+      logger.info('event not found', { eventId, duration: `${duration}ms` });
       return NextResponse.json(
-        { error: 'Event not found' },
+        { error: 'event not found' },
         { status: 404 }
       );
     }
-
-    const registrations = await getEventRegistrations(params.id, request);
     
-    return NextResponse.json({
-      ...event,
-      registrations,
-    }, { status: 200 });
+    logger.debug('event fetched', { eventId, duration: `${duration}ms` });
+    
+    return NextResponse.json(event, { 
+      status: 200,
+      headers: {
+        'Cache-Control': 'public, s-maxage=180, stale-while-revalidate=360',
+        'X-Response-Time': `${duration}ms`,
+      }
+    });
   } catch (error) {
-    console.error('[events API] Error fetching event');
+    const duration = Date.now() - startTime;
+    logger.error('failed to fetch event', error, { eventId, duration: `${duration}ms` });
+    
     return NextResponse.json(
-      { error: 'Failed to fetch event' },
+      { error: 'failed to fetch event' },
       { status: 500 }
     );
   }
 }
-
-

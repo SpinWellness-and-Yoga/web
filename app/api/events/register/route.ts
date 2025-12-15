@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createEventRegistration, checkDuplicateRegistration, getEventById } from '@/lib/events-storage';
 import { sendEventRegistrationNotification, sendEventRegistrationConfirmation } from '@/lib/email';
+import { getEventAddress } from '@/lib/utils';
+import { validateRegistration, sanitizeRegistrationInput } from '@/lib/validation';
+import { checkRegistrationRateLimit, getClientIp } from '@/lib/rate-limit';
+import { generateIdempotencyKey } from '@/lib/ticket-generator';
+import { logger } from '@/lib/logger';
+import { cache } from '@/lib/cache';
 
 function getEnvFromRequest(request: Request): any {
   const req = request as any;
@@ -15,13 +21,41 @@ function getEnvFromRequest(request: Request): any {
   return undefined;
 }
 
+// idempotency store for duplicate request prevention
+const idempotencyStore = new Map<string, { response: any; expiresAt: number }>();
+
+// cleanup expired idempotency keys every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of idempotencyStore.entries()) {
+    if (now > value.expiresAt) {
+      idempotencyStore.delete(key);
+    }
+  }
+}, 600000);
+
 export async function POST(request: Request) {
+  const startTime = Date.now();
+  let clientIp = 'unknown';
+  let sanitizedEmail = '';
+
   try {
+    // parse request body with size limit check
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 10000) {
+      logger.warn('request body too large', { contentLength });
+      return NextResponse.json(
+        { error: 'request body too large' },
+        { status: 413 }
+      );
+    }
+
     const body = await request.json();
     const env = getEnvFromRequest(request) || process.env;
     
     const { event_id, name, gender, profession, phone_number, email, location_preference, needs_directions, notes } = body;
 
+    // basic required field check
     if (!event_id || !name || !gender || !profession || !phone_number || !email || !location_preference) {
       return NextResponse.json(
         { error: 'missing required fields' },
@@ -29,84 +63,96 @@ export async function POST(request: Request) {
       );
     }
 
-    const sanitizedName = name.toString().trim().substring(0, 200);
-    const sanitizedEmail = email.toString().trim().toLowerCase().substring(0, 255);
-    const sanitizedPhone = phone_number.toString().replace(/\D/g, '');
-    const sanitizedProfession = profession.toString().trim().substring(0, 200);
-    const sanitizedNotes = notes ? notes.toString().trim().substring(0, 200) : null;
+    // sanitize and validate input
+    const sanitizedInput = sanitizeRegistrationInput({
+      name,
+      email,
+      phone_number,
+      gender,
+      profession,
+      location_preference,
+      notes,
+    });
 
-    if (sanitizedPhone.length < 10 || sanitizedPhone.length > 15) {
+    sanitizedEmail = sanitizedInput.email;
+
+    const validation = validateRegistration(sanitizedInput);
+    if (!validation.valid) {
+      const firstError = Object.values(validation.errors)[0];
+      logger.info('validation failed', { errors: validation.errors });
       return NextResponse.json(
-        { error: 'phone number must be between 10 and 15 digits' },
+        { error: firstError },
         { status: 400 }
       );
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitizedEmail)) {
+    // rate limiting
+    clientIp = getClientIp(request);
+    const rateLimitCheck = checkRegistrationRateLimit(clientIp, sanitizedEmail);
+    if (!rateLimitCheck.allowed) {
+      logger.warn('rate limit exceeded', { ip: clientIp, email: sanitizedEmail });
       return NextResponse.json(
-        { error: 'invalid email format' },
-        { status: 400 }
+        { error: rateLimitCheck.reason },
+        { status: 429 }
       );
     }
 
-    const validGenders = ['female', 'male', 'non-binary', 'prefer-not-to-say'];
-    if (!validGenders.includes(gender.toString().trim())) {
-      return NextResponse.json(
-        { error: 'invalid gender selection' },
-        { status: 400 }
-      );
+    // idempotency check
+    const idempotencyKey = generateIdempotencyKey(event_id, sanitizedEmail);
+    const existingResponse = idempotencyStore.get(idempotencyKey);
+    if (existingResponse && Date.now() < existingResponse.expiresAt) {
+      logger.info('returning idempotent response', { eventId: event_id, email: sanitizedEmail });
+      return NextResponse.json(existingResponse.response, { status: 201 });
     }
 
-    const validLocations = ['lagos', 'ibadan'];
-    if (!validLocations.includes(location_preference.toString().trim().toLowerCase())) {
-      return NextResponse.json(
-        { error: 'invalid location preference' },
-        { status: 400 }
-      );
-    }
-
-    // check for duplicate email registration
-    const isDuplicate = await checkDuplicateRegistration(event_id, email, request);
+    // check for duplicate registration
+    const isDuplicate = await checkDuplicateRegistration(event_id, sanitizedEmail, request);
     if (isDuplicate) {
+      logger.info('duplicate registration attempt', { eventId: event_id, email: sanitizedEmail });
       return NextResponse.json(
         { error: 'this email has already been registered for this event' },
         { status: 400 }
       );
     }
 
-    // get event details for email
+    // verify event exists
     const event = await getEventById(event_id, request);
     if (!event) {
+      logger.warn('event not found', { eventId: event_id });
       return NextResponse.json(
         { error: 'event not found' },
         { status: 404 }
       );
     }
 
+    // create registration (with atomic capacity check inside)
     const registration = await createEventRegistration({
       event_id: event_id.toString().trim(),
-      name: sanitizedName,
-      gender: gender.toString().trim(),
-      profession: sanitizedProfession,
-      phone_number: sanitizedPhone,
-      email: sanitizedEmail,
-      location_preference: location_preference.toString().trim().toLowerCase(),
+      name: sanitizedInput.name,
+      gender: sanitizedInput.gender,
+      profession: sanitizedInput.profession,
+      phone_number: sanitizedInput.phone_number,
+      email: sanitizedInput.email,
+      location_preference: sanitizedInput.location_preference,
       needs_directions: needs_directions ? 1 : 0,
-      notes: sanitizedNotes,
+      notes: sanitizedInput.notes || undefined,
       status: 'confirmed',
     }, request);
 
+    const eventDate = new Date(event.start_date).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+
+    // send emails asynchronously (non-blocking)
     Promise.all([
       sendEventRegistrationNotification({
         event_name: event.name,
-        event_date: new Date(event.start_date).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-        }),
+        event_date: eventDate,
         event_location: event.location,
         name: registration.name,
         email: registration.email,
@@ -120,35 +166,62 @@ export async function POST(request: Request) {
       }, env),
       sendEventRegistrationConfirmation({
         event_name: event.name,
-        event_date: new Date(event.start_date).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-        }),
+        event_date: eventDate,
         event_location: event.location,
         event_venue: event.venue,
+        event_address: getEventAddress(event.location),
         name: registration.name,
         email: registration.email,
         ticket_number: registration.ticket_number,
         location_preference: registration.location_preference,
       }, env),
-    ]).catch(() => {
-      console.log('[events register API] Email sending failed (non-blocking)');
+    ]).catch((error) => {
+      logger.error('email sending failed', error, { ticketNumber: registration.ticket_number });
     });
 
-    return NextResponse.json(
-      { success: true, registration },
-      { status: 201 }
-    );
+    const responseData = { success: true, registration };
+    
+    // store in idempotency cache for 5 minutes
+    idempotencyStore.set(idempotencyKey, {
+      response: responseData,
+      expiresAt: Date.now() + 300000,
+    });
+
+    const duration = Date.now() - startTime;
+    logger.info('registration successful', { 
+      eventId: event_id, 
+      ticketNumber: registration.ticket_number,
+      duration: `${duration}ms`,
+      ip: clientIp,
+    });
+
+    return NextResponse.json(responseData, { status: 201 });
   } catch (error) {
-    console.error('[events register API] Error');
+    const duration = Date.now() - startTime;
+    logger.error('registration failed', error, { 
+      email: sanitizedEmail,
+      ip: clientIp,
+      duration: `${duration}ms`,
+    });
+
+    // check for specific error messages
+    const errorMessage = error instanceof Error ? error.message : '';
+    if (errorMessage.includes('at capacity')) {
+      return NextResponse.json(
+        { error: 'event is at capacity' },
+        { status: 400 }
+      );
+    }
+    if (errorMessage.includes('already exists')) {
+      return NextResponse.json(
+        { error: 'this email has already been registered for this event' },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'failed to register for event' },
       { status: 500 }
     );
   }
 }
-
