@@ -183,79 +183,6 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
     });
   };
 
-  if (submitSuccess) {
-    return (
-      <main className={styles.main} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-        <div style={{ 
-          maxWidth: '600px',
-          width: '100%',
-          padding: '3rem 2rem', 
-          textAlign: 'center', 
-          background: 'linear-gradient(135deg, #ffffff 0%, #fef9f5 100%)',
-          borderRadius: '20px',
-          boxShadow: '0 8px 24px rgba(241, 111, 100, 0.15)',
-          border: '2px solid #f16f64',
-          color: '#151B47'
-        }}>
-          <div style={{ 
-            fontSize: '3rem', 
-            marginBottom: '1rem',
-            color: '#f16f64',
-            width: '60px',
-            height: '60px',
-            margin: '0 auto 1rem',
-            borderRadius: '50%',
-            background: 'rgba(241, 111, 100, 0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>✓</div>
-          <h3 style={{ color: '#151B47', marginBottom: '1rem', fontSize: '1.5rem', fontWeight: '600' }}>registration successful!</h3>
-          <p style={{ color: '#322216', fontSize: '1.05rem', lineHeight: '1.6', marginBottom: '2rem' }}>
-            we&apos;ve received your registration. you&apos;ll receive a confirmation email shortly with your ticket details.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
-            <Link
-              href="/events"
-              style={{
-                display: 'inline-block',
-                padding: '0.75rem 2rem',
-                background: '#f16f64',
-                color: 'white',
-                borderRadius: '25px',
-                fontSize: '1rem',
-                fontWeight: '600',
-                textDecoration: 'none',
-                width: '100%',
-                maxWidth: '300px',
-              }}
-            >
-              back to events
-            </Link>
-            <Link
-              href={`/events/${eventId}`}
-              style={{
-                display: 'inline-block',
-                padding: '0.75rem 2rem',
-                background: 'transparent',
-                color: '#f16f64',
-                border: '2px solid #f16f64',
-                borderRadius: '25px',
-                fontSize: '1rem',
-                fontWeight: '600',
-                textDecoration: 'none',
-                width: '100%',
-                maxWidth: '300px',
-              }}
-            >
-              view event details
-            </Link>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
   const spotsRemaining = getSpotsRemaining(registrationCount);
   const locationLabel = getEventLocationLabel(event.location);
   const address = getEventAddress(event.location);
@@ -357,6 +284,79 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
       <path d={path} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
+
+  if (submitSuccess) {
+    return (
+      <main className={styles.main} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+        <div style={{ 
+          maxWidth: '600px',
+          width: '100%',
+          padding: '3rem 2rem', 
+          textAlign: 'center', 
+          background: 'linear-gradient(135deg, #ffffff 0%, #fef9f5 100%)',
+          borderRadius: '20px',
+          boxShadow: '0 8px 24px rgba(241, 111, 100, 0.15)',
+          border: '2px solid #f16f64',
+          color: '#151B47'
+        }}>
+          <div style={{ 
+            fontSize: '3rem', 
+            marginBottom: '1rem',
+            color: '#f16f64',
+            width: '60px',
+            height: '60px',
+            margin: '0 auto 1rem',
+            borderRadius: '50%',
+            background: 'rgba(241, 111, 100, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>✓</div>
+          <h3 style={{ color: '#151B47', marginBottom: '1rem', fontSize: '1.5rem', fontWeight: '600' }}>registration successful!</h3>
+          <p style={{ color: '#322216', fontSize: '1.05rem', lineHeight: '1.6', marginBottom: '2rem' }}>
+            we&apos;ve received your registration. you&apos;ll receive a confirmation email shortly with your ticket details.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+            <Link
+              href="/events"
+              style={{
+                display: 'inline-block',
+                padding: '0.75rem 2rem',
+                background: '#f16f64',
+                color: 'white',
+                borderRadius: '25px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                textDecoration: 'none',
+                width: '100%',
+                maxWidth: '300px',
+              }}
+            >
+              back to events
+            </Link>
+            <Link
+              href={`/events/${eventId}`}
+              style={{
+                display: 'inline-block',
+                padding: '0.75rem 2rem',
+                background: 'transparent',
+                color: '#f16f64',
+                border: '2px solid #f16f64',
+                borderRadius: '25px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                textDecoration: 'none',
+                width: '100%',
+                maxWidth: '300px',
+              }}
+            >
+              view event details
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <>
