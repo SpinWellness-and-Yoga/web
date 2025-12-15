@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from '../page.module.css';
@@ -14,7 +14,6 @@ export default function Navbar({ className }: NavbarProps) {
   const [isScrollingDown, setIsScrollingDown] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -34,13 +33,10 @@ export default function Navbar({ className }: NavbarProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  const handleEventsClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (pathname === '/events') {
-      e.preventDefault();
-      router.refresh();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
+  // close the mobile menu whenever the route changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   return (
     <header className={`${styles.navbar} ${isScrollingDown ? styles.hidden : ''} ${className ?? ''}`}>
@@ -60,7 +56,7 @@ export default function Navbar({ className }: NavbarProps) {
         <nav className={styles.navLinks} aria-label="Primary">
           <Link href="/#services">Services</Link>
           <Link href="/#why">Why Us</Link>
-          <Link href="/events" onClick={handleEventsClick}>Events</Link>
+          <Link href="/events">Events</Link>
           <Link href="/#waitlist">Waitlist</Link>
           <Link href="/contact">Contact</Link>
         </nav>
@@ -84,7 +80,7 @@ export default function Navbar({ className }: NavbarProps) {
         <Link href="/#why" onClick={() => setMobileMenuOpen(false)}>
           Why Us
         </Link>
-        <Link href="/events" onClick={(e) => { setMobileMenuOpen(false); handleEventsClick(e); }}>
+        <Link href="/events" onClick={() => setMobileMenuOpen(false)}>
           Events
         </Link>
         <Link href="/#waitlist" onClick={() => setMobileMenuOpen(false)}>
