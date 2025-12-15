@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import React, {useState} from 'react';
 import {Event} from '../../../../lib/events-storage';
-import {capitalizeWords, formatEventDescription, getEventAddress, getMapsUrl} from '../../../../lib/utils';
+import {capitalizeWords, formatEventDescription, getEventAddress, getEventLocationLabel, getMapsUrl} from '../../../../lib/utils';
 import styles from '../../../page.module.css';
 
 interface RegistrationForm {
@@ -236,13 +236,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
 
   const registeredCount = event.registration_count ?? 0;
   const spotsRemaining = event.capacity > 0 ? event.capacity - registeredCount : null;
-  const locationLower = (event.location ?? '').trim().toLowerCase();
-  const locationLabel =
-    locationLower.includes('ibadan')
-      ? 'TYAwithNio Studios, Ibadan'
-      : locationLower.includes('lagos')
-        ? 'Alpha Fitness Studios, Lagos'
-        : capitalizeWords(event.location);
+  const locationLabel = getEventLocationLabel(event.location);
 
   return (
     <>

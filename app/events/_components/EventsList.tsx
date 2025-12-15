@@ -50,7 +50,7 @@ export default function EventsList({ events }: EventsListProps) {
             <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: '#151B47' }}>{capitalizeWords(event.name)}</h3>
             <div style={{ fontSize: '0.9rem', color: '#322216', marginBottom: '1rem' }}>
               <p><strong>Date:</strong> {formatDate(event.start_date)}</p>
-              <p><strong>Location:</strong> {event.location}</p>
+              <p><strong>Location:</strong> {capitalizeWords(event.location)}</p>
               {event.capacity > 0 && (() => {
                 const registeredCount = event.registration_count ?? 0;
                 const spotsRemaining = event.capacity - registeredCount;

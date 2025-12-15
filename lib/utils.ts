@@ -159,3 +159,10 @@ export function getMapsUrl(address: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
 }
 
+export function getEventLocationLabel(location: string): string {
+  const locationLower = (location ?? '').trim().toLowerCase();
+  if (locationLower.includes('ibadan')) return 'TYAwithNio Studios, Ibadan';
+  if (locationLower.includes('lagos')) return 'Alpha Fitness Studios, Lagos';
+  return capitalizeWords((location ?? '').trim());
+}
+

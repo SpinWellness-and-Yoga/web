@@ -15,9 +15,9 @@ export async function GET(request: Request) {
 
   const rendered = renderEventRegistrationConfirmationEmail({
     event_name: 'recommit to your wellbeing - lagos edition',
-    event_date: 'Saturday, January 3, 2026 at 4:30 PM WAT',
-    event_location: 'lagos',
-    event_venue: 'studio venue',
+    event_date: 'Saturday, January 3, 2026',
+    event_time: '4:30 PM WAT',
+    event_location: 'Alpha Fitness Studios, Lagos',
     event_address: 'Alpha Fitness Studios, Centro Lekki Mall, Plot 65a Admiralty Way, Lekki Phase 1 Lagos, Nigeria',
     name: 'Opeyemi',
     email: 'opeyemi@example.com',
