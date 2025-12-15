@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createEventRegistration, checkDuplicateRegistration, getEventById } from '@/lib/events-storage';
-import { sendEventRegistrationNotification, sendEventRegistrationConfirmation } from '@/lib/email';
-import { getEventAddress } from '@/lib/utils';
-import { validateRegistration, sanitizeRegistrationInput } from '@/lib/validation';
-import { checkRegistrationRateLimit, getClientIp } from '@/lib/rate-limit';
-import { generateIdempotencyKey } from '@/lib/ticket-generator';
-import { logger } from '@/lib/logger';
-import { cache } from '@/lib/cache';
+import { createEventRegistration, checkDuplicateRegistration, getEventById } from '../../../../lib/events-storage';
+import { sendEventRegistrationNotification, sendEventRegistrationConfirmation } from '../../../../lib/email';
+import { getEventAddress } from '../../../../lib/utils';
+import { validateRegistration, sanitizeRegistrationInput } from '../../../../lib/validation';
+import { checkRegistrationRateLimit, getClientIp } from '../../../../lib/rate-limit';
+import { generateIdempotencyKey } from '../../../../lib/ticket-generator';
+import { logger } from '../../../../lib/logger';
+import { cache } from '../../../../lib/cache';
 
 function getEnvFromRequest(request: Request): any {
   const req = request as any;

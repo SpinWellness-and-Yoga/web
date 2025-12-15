@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sendContactNotification, sendContactConfirmation } from "@/lib/email";
+import { sendContactNotification, sendContactConfirmation } from "../../../lib/email";
 
 function getEnvFromRequest(request: Request): any {
   const req = request as any;

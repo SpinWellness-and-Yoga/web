@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { renderEventRegistrationConfirmationEmail } from '@/lib/email';
+import { renderEventRegistrationConfirmationEmail } from '../../../../lib/email';
 
 export async function GET(request: Request) {
   if (process.env.NODE_ENV !== 'development') {

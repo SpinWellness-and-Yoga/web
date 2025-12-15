@@ -45,46 +45,17 @@ class MemoryCache {
 export const cache = new MemoryCache();
 
 export async function cacheGetJson<T>(key: string): Promise<T | null> {
-  const local = cache.get<T>(key);
-  if (local) return local;
-
-  const { redisEnabled, redisGet } = await import('./redis');
-  if (!redisEnabled()) return null;
-
-  const raw = await redisGet(key);
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw) as T;
-    // default local ttl; redis is authoritative
-    cache.set(key, parsed, 60);
-    return parsed;
-  } catch {
-    return null;
-  }
+  return cache.get<T>(key);
 }
 
 export async function cacheSetJson<T>(key: string, value: T, ttlSeconds: number): Promise<void> {
   cache.set(key, value, ttlSeconds);
-
-  const { redisEnabled, redisSet } = await import('./redis');
-  if (!redisEnabled()) return;
-
-  try {
-    await redisSet(key, JSON.stringify(value), ttlSeconds);
-  } catch {
-    // ignore
-  }
 }
 
 export async function cacheDel(keys: string[]): Promise<void> {
   for (const key of keys) {
     cache.delete(key);
   }
-
-  const { redisEnabled, redisDel } = await import('./redis');
-  if (!redisEnabled()) return;
-  await redisDel(keys);
 }
 
 // cleanup expired entries every 5 minutes

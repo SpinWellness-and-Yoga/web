@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getAllEventsWithCounts } from '@/lib/events-storage';
-import { logger } from '@/lib/logger';
+import { getAllEventsWithCounts } from '../../../lib/events-storage';
+import { logger } from '../../../lib/logger';
 
 export const revalidate = 300;
 

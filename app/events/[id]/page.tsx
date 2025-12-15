@@ -5,8 +5,8 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from '../../page.module.css';
-import { capitalizeWords, getEventAddress, getMapsUrl, formatEventDescription } from '@/lib/utils';
-import Navbar from '@/app/_components/Navbar';
+import { capitalizeWords, getEventAddress, getMapsUrl, formatEventDescription } from '../../../lib/utils';
+import Navbar from '../../_components/Navbar';
 
 interface Event {
   id: string;

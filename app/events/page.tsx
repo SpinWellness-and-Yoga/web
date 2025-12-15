@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navbar from '../_components/Navbar';
 import styles from '../page.module.css';
-import { capitalizeWords } from '@/lib/utils';
+import { capitalizeWords } from '../../lib/utils';
 
 interface Event {
   id: string;
