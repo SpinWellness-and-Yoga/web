@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -18,14 +18,14 @@ export default function Navbar({ className }: NavbarProps) {
   const hideTimerRef = useRef<number | null>(null);
   const lastPathRef = useRef<string>(pathname);
 
-  const clearHideTimer = () => {
+  const clearHideTimer = useCallback(() => {
     if (hideTimerRef.current !== null) {
       window.clearTimeout(hideTimerRef.current);
       hideTimerRef.current = null;
     }
-  };
+  }, []);
 
-  const scheduleAutoHide = () => {
+  const scheduleAutoHide = useCallback(() => {
     clearHideTimer();
     if (typeof window === 'undefined') return;
     if (mobileMenuOpen) return;
@@ -34,7 +34,7 @@ export default function Navbar({ className }: NavbarProps) {
     hideTimerRef.current = window.setTimeout(() => {
       setIsScrollingDown(true);
     }, 300);
-  };
+  }, [clearHideTimer, mobileMenuOpen]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -61,9 +61,9 @@ export default function Navbar({ className }: NavbarProps) {
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY, mobileMenuOpen]);
+  }, [lastScrollY, clearHideTimer, scheduleAutoHide]);
 
-  // hide after 2s of no activity when shown from scroll-up
+  // auto-hide after a short idle period when shown from scroll-up
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (mobileMenuOpen) return;
@@ -91,7 +91,7 @@ export default function Navbar({ className }: NavbarProps) {
       window.removeEventListener('mousemove', onActivity);
       clearHideTimer();
     };
-  }, [isScrollingDown, mobileMenuOpen]);
+  }, [isScrollingDown, mobileMenuOpen, scheduleAutoHide, clearHideTimer]);
 
   // close the mobile menu on route change (but do not immediately close on open)
   useEffect(() => {
@@ -103,15 +103,16 @@ export default function Navbar({ className }: NavbarProps) {
     return () => window.clearTimeout(t);
   }, [pathname, mobileMenuOpen]);
 
-  // ensure navbar stays visible while the mobile menu is open
-  useEffect(() => {
-    if (!mobileMenuOpen) return;
-    setIsScrollingDown(false);
+  const handleToggleMenu = () => {
     clearHideTimer();
-  }, [mobileMenuOpen]);
+    setIsScrollingDown(false);
+    setMobileMenuOpen((v) => !v);
+  };
 
   return (
-    <header className={`${styles.navbar} ${isScrollingDown ? styles.hidden : ''} ${className ?? ''}`}>
+    <header
+      className={`${styles.navbar} ${(isScrollingDown && !mobileMenuOpen) ? styles.hidden : ''} ${className ?? ''}`}
+    >
       <div className={styles.navInner}>
         <Link href="/" className={styles.brand} aria-label="home">
           <Image
@@ -135,7 +136,7 @@ export default function Navbar({ className }: NavbarProps) {
 
         <button
           className={styles.hamburger}
-          onClick={() => setMobileMenuOpen((v) => !v)}
+          onClick={handleToggleMenu}
           aria-label="toggle menu"
           type="button"
         >
