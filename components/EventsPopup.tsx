@@ -69,11 +69,12 @@ export default function EventsPopup() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    const dateOnly = date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
     });
+    return `${dateOnly} at 4:30 PM WAT`;
   };
 
   if (!isOpen || events.length === 0) {

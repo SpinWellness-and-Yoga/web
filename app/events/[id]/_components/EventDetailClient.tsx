@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
 import Link from 'next/link';
+import React, {useState} from 'react';
+import {Event} from '../../../../lib/events-storage';
+import {capitalizeWords, formatEventDescription, getEventAddress, getMapsUrl} from '../../../../lib/utils';
 import styles from '../../../page.module.css';
-import { capitalizeWords, getEventAddress, getMapsUrl, formatEventDescription } from '../../../../lib/utils';
-import { Event } from '../../../../lib/events-storage';
 
 interface RegistrationForm {
   name: string;
@@ -151,15 +151,13 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDateOnly = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
     });
   };
 
@@ -238,6 +236,13 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
 
   const registeredCount = event.registration_count ?? 0;
   const spotsRemaining = event.capacity > 0 ? event.capacity - registeredCount : null;
+  const locationLower = (event.location ?? '').trim().toLowerCase();
+  const locationLabel =
+    locationLower.includes('ibadan')
+      ? 'TYAwithNio Studios, Ibadan'
+      : locationLower.includes('lagos')
+        ? 'Alpha Fitness Studios, Lagos'
+        : capitalizeWords(event.location);
 
   return (
     <>
@@ -250,8 +255,9 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
               </Link>
               <h1 className={styles.heroTitle}>{capitalizeWords(event.name)}</h1>
               <div style={{ fontSize: '1.1rem', color: '#322216', marginTop: '1rem' }}>
-                <p><strong>{capitalizeWords('date')}:</strong> {formatDate(event.start_date)}</p>
-                <p><strong>{capitalizeWords('location')}:</strong> {capitalizeWords(event.location)}</p>
+                <p><strong>{capitalizeWords('date')}:</strong> {formatDateOnly(event.start_date)}</p>
+                <p><strong>{capitalizeWords('time')}:</strong> 4:30 PM WAT</p>
+                <p><strong>{capitalizeWords('location')}:</strong> {locationLabel}</p>
                 {(() => {
                   const address = getEventAddress(event.location);
                   if (address) {
@@ -272,7 +278,6 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                   }
                   return null;
                 })()}
-                {event.venue && <p><strong>{capitalizeWords('venue')}:</strong> {capitalizeWords(event.venue)}</p>}
                 {spotsRemaining !== null && (
                   <p><strong>{capitalizeWords('spots available')}:</strong> {spotsRemaining} of {event.capacity}</p>
                 )}
@@ -281,16 +286,35 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
           </div>
         </section>
 
-        <section style={{ padding: '4rem 2rem', maxWidth: '1200px', margin: '0 auto' }}>
+        <section style={{ padding: '2rem 2rem 4rem', maxWidth: '1200px', margin: '0 auto' }}>
           <div className="event-detail-grid">
             <div>
               <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', color: '#151B47' }}>{capitalizeWords('event details')}</h2>
               <div style={{ lineHeight: '1.8', color: '#322216' }}>
-                {formatEventDescription(event.description).map((paragraph, index) => (
-                  <p key={index} style={{ marginBottom: '1.5rem' }}>
-                    {capitalizeWords(paragraph)}
-                  </p>
-                ))}
+                {formatEventDescription(event.description).map((block, index) => {
+                  if (block.type === 'itinerary') {
+                    return (
+                      <div key={`${block.type}-${index}`} style={{ marginBottom: '1.5rem' }}>
+                        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.05rem', color: '#151B47' }}>
+                          {capitalizeWords(block.title)}
+                        </h3>
+                        <ul style={{ margin: 0, paddingLeft: '1.25rem', display: 'grid', gap: '0.75rem' }}>
+                          {block.items.map((item, i) => (
+                            <li key={i} style={{ margin: 0 }}>
+                              <strong>{item.duration}</strong> {capitalizeWords(item.text)}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <p key={`${block.type}-${index}`} style={{ marginBottom: '1.5rem' }}>
+                      {capitalizeWords(block.text)}
+                    </p>
+                  );
+                })}
               </div>
             </div>
 

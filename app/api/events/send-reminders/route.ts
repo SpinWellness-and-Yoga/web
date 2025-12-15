@@ -57,14 +57,12 @@ export async function GET(request: Request) {
         try {
           await sendEventReminder({
             event_name: event.name,
-            event_date: new Date(event.start_date).toLocaleDateString('en-US', {
+            event_date: `${new Date(event.start_date).toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
               month: 'long',
               day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-            }),
+            })} at 4:30 PM WAT`,
             event_location: event.location,
             event_venue: event.venue,
             name: registration.name,
