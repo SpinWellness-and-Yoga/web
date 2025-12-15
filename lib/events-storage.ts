@@ -1,7 +1,7 @@
 import { getSupabaseClient } from './supabase';
 import { logger } from './logger';
 import { generateSecureTicketNumber } from './ticket-generator';
-import { cache } from './cache';
+import { cacheDel, cacheGetJson, cacheSetJson } from './cache';
 import { CACHE_CONFIG } from './constants';
 
 export interface Event {
@@ -40,7 +40,7 @@ export interface EventRegistration {
 
 export async function getAllEventsWithCounts(request?: Request): Promise<Event[]> {
   const cacheKey = 'events:all:with-counts';
-  const cached = cache.get<Event[]>(cacheKey);
+  const cached = await cacheGetJson<Event[]>(cacheKey);
   
   if (cached) {
     logger.debug('returning cached events list');
@@ -91,7 +91,7 @@ export async function getAllEventsWithCounts(request?: Request): Promise<Event[]
       registration_count: event.event_registrations?.[0]?.count || 0,
     })) as Event[];
 
-    cache.set(cacheKey, events, CACHE_CONFIG.EVENTS_LIST_TTL);
+    await cacheSetJson(cacheKey, events, CACHE_CONFIG.EVENTS_LIST_TTL);
     return events;
   } catch (error) {
     logger.error('exception fetching events with counts', error);
@@ -175,7 +175,7 @@ export async function getEventById(id: string, request?: Request): Promise<Event
 
 export async function getEventByIdWithCount(id: string, request?: Request): Promise<Event | null> {
   const cacheKey = `event:${id}:with-count`;
-  const cached = cache.get<Event>(cacheKey);
+  const cached = await cacheGetJson<Event>(cacheKey);
   
   if (cached) {
     logger.debug('returning cached event', { eventId: id });
@@ -215,7 +215,7 @@ export async function getEventByIdWithCount(id: string, request?: Request): Prom
       registration_count: data.event_registrations?.[0]?.count || 0,
     } as Event;
 
-    cache.set(cacheKey, event, CACHE_CONFIG.EVENT_DETAIL_TTL);
+    await cacheSetJson(cacheKey, event, CACHE_CONFIG.EVENT_DETAIL_TTL);
     return event;
   } catch (error) {
     logger.error('exception fetching event by id', error, { eventId: id });
@@ -373,8 +373,10 @@ export async function createEventRegistration(
     }
 
     // invalidate cache after successful registration
-    cache.invalidatePattern(`event:${registration.event_id}`);
-    cache.invalidatePattern('events:all');
+    await cacheDel([
+      `event:${registration.event_id}:with-count`,
+      'events:all:with-counts',
+    ]);
 
     logger.info('registration created successfully', { 
       eventId: registration.event_id, 
