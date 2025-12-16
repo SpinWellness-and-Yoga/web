@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendContactNotification, sendContactConfirmation } from "../../../lib/email";
+import { logger } from "../../../lib/logger";
 
 function getEnvFromRequest(request: Request): any {
   const req = request as any;
@@ -43,10 +44,23 @@ export async function POST(request: Request) {
       );
     }
 
-    Promise.all([
+    // await email sends so serverless/worker runtimes don't terminate early
+    const emailTimeoutMs = 8000;
+    const emailTasks = [
       sendContactNotification({ name, email, message }, env),
       sendContactConfirmation({ name, email }, env),
-    ]).catch(() => {});
+    ];
+    const settled = await Promise.race([
+      Promise.allSettled(emailTasks),
+      new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), emailTimeoutMs)),
+    ]);
+
+    if (settled === 'timeout') {
+      logger.warn('contact email send timed out', { timeout_ms: emailTimeoutMs });
+    } else {
+      const failed = settled.filter((r) => r.status === 'rejected').length;
+      if (failed > 0) logger.warn('contact email send had failures', { failed, total: settled.length });
+    }
 
     return NextResponse.json(
       {

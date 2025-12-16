@@ -148,8 +148,12 @@ export async function POST(request: Request) {
     const eventTime = '4:30 PM WAT';
     const eventDate = `${eventDateOnly} at ${eventTime}`;
 
-    // send emails asynchronously (non-blocking)
-    Promise.all([
+    // send emails before returning to avoid serverless freezing background tasks.
+    // keep logs high-signal and avoid logging sensitive data.
+    const emailStart = Date.now();
+    logger.info('starting email send', { event_id: String(event_id).trim() });
+
+    const emailTasks = [
       sendEventRegistrationNotification({
         event_name: event.name,
         event_date: eventDate,
@@ -177,9 +181,25 @@ export async function POST(request: Request) {
         ticket_number: registration.ticket_number,
         location_preference: registration.location_preference,
       }, env),
-    ]).catch((error) => {
-      logger.error('email sending failed', error);
-    });
+    ];
+
+    const emailTimeoutMs = 12000;
+    const settled = await Promise.race([
+      Promise.allSettled(emailTasks),
+      new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), emailTimeoutMs)),
+    ]);
+
+    if (settled === 'timeout') {
+      logger.warn('email send timed out', { timeout_ms: emailTimeoutMs });
+    } else {
+      const failed = settled.filter((r) => r.status === 'rejected').length;
+      const durationMs = Date.now() - emailStart;
+      if (failed > 0) {
+        logger.warn('email send completed with failures', { failed, total: settled.length, duration_ms: durationMs });
+      } else {
+        logger.info('email send completed', { total: settled.length, duration_ms: durationMs });
+      }
+    }
 
     const responseData = { success: true, registration };
     
