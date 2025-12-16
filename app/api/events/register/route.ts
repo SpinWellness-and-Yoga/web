@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     clientIp = getClientIp(request);
     const rateLimitCheck = checkRegistrationRateLimit(clientIp, sanitizedEmail);
     if (!rateLimitCheck.allowed) {
-      logger.warn('rate limit exceeded', { ip: clientIp, email: sanitizedEmail });
+      logger.warn('rate limit exceeded');
       return NextResponse.json(
         { error: rateLimitCheck.reason },
         { status: 429 }
@@ -101,14 +101,14 @@ export async function POST(request: Request) {
     const idempotencyKey = generateIdempotencyKey(event_id, sanitizedEmail);
     const existingResponse = idempotencyStore.get(idempotencyKey);
     if (existingResponse && Date.now() < existingResponse.expiresAt) {
-      logger.info('returning idempotent response', { eventId: event_id, email: sanitizedEmail });
+      logger.info('returning cached registration response');
       return NextResponse.json(existingResponse.response, { status: 201 });
     }
 
     // check for duplicate registration
     const isDuplicate = await checkDuplicateRegistration(event_id, sanitizedEmail, request);
     if (isDuplicate) {
-      logger.info('duplicate registration attempt', { eventId: event_id, email: sanitizedEmail });
+      logger.info('duplicate registration detected');
       return NextResponse.json(
         { error: 'this email has already been registered for this event' },
         { status: 400 }
@@ -170,13 +170,15 @@ export async function POST(request: Request) {
         event_time: eventTime,
         event_location: getEventLocationLabel(event.location),
         event_address: getEventAddress(event.location),
+        event_start_iso: event.start_date,
+        event_end_iso: event.end_date,
         name: registration.name,
         email: registration.email,
         ticket_number: registration.ticket_number,
         location_preference: registration.location_preference,
       }, env),
     ]).catch((error) => {
-      logger.error('email sending failed', error, { ticketNumber: registration.ticket_number });
+      logger.error('email sending failed', error);
     });
 
     const responseData = { success: true, registration };
@@ -188,21 +190,12 @@ export async function POST(request: Request) {
     });
 
     const duration = Date.now() - startTime;
-    logger.info('registration successful', { 
-      eventId: event_id, 
-      ticketNumber: registration.ticket_number,
-      duration: `${duration}ms`,
-      ip: clientIp,
-    });
+    logger.info(`registration successful (${duration}ms)`);
 
     return NextResponse.json(responseData, { status: 201 });
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error('registration failed', error, { 
-      email: sanitizedEmail,
-      ip: clientIp,
-      duration: `${duration}ms`,
-    });
+    logger.error(`registration failed (${duration}ms)`, error);
 
     // check for specific error messages
     const errorMessage = error instanceof Error ? error.message : '';

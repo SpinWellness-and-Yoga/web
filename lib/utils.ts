@@ -154,7 +154,17 @@ export function formatEventDescription(description: string): EventDescriptionBlo
 }
 
 export function getEventAddress(location: string): string {
-  // using one canonical address as requested
+  const locationLower = (location ?? '').trim().toLowerCase();
+  
+  if (locationLower.includes('lagos')) {
+    return 'Centro Lekki Mall, 15 Admiralty Wy, Lekki Phase 1, Lagos, Nigeria';
+  }
+  
+  if (locationLower.includes('ibadan')) {
+    return '16 Ilaro St, Old Bodija, Ibadan 200212, Oyo, Nigeria';
+  }
+  
+  // default to ibadan if location is unclear
   return '16 Ilaro St, Old Bodija, Ibadan 200212, Oyo, Nigeria';
 }
 
