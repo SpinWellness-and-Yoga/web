@@ -115,6 +115,18 @@ export async function redisSet(key: string, value: string, ttlSeconds: number): 
   }
 }
 
+export async function redisSetNx(key: string, value: string, ttlSeconds: number): Promise<boolean> {
+  const c = await getRedis();
+  if (!c) return false;
+  try {
+    const res = await c.set(prefixKey(key), value, { EX: ttlSeconds, NX: true });
+    return res === 'OK';
+  } catch {
+    logger.warn('redis setnx failed');
+    return false;
+  }
+}
+
 export async function redisDel(keys: string[]): Promise<void> {
   if (keys.length === 0) return;
   const c = await getRedis();

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {Event} from '../../../../lib/events-storage';
 import {capitalizeWords, formatEventDescription, getEventAddress, getEventLocationLabel, getMapsUrl} from '../../../../lib/utils';
 import styles from '../../../page.module.css';
@@ -26,6 +26,7 @@ interface EventDetailClientProps {
 export default function EventDetailClient({ event, eventId }: EventDetailClientProps) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const submitLockRef = useRef(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -149,6 +150,8 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
     setSubmitting(true);
     setSubmitError(null);
     setValidationErrors({});
@@ -158,11 +161,13 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
     if (spotsRemaining !== null && spotsRemaining <= 0) {
       setSubmitError('this event is sold out');
       setSubmitting(false);
+      submitLockRef.current = false;
       return;
     }
 
     if (!validateForm()) {
       setSubmitting(false);
+      submitLockRef.current = false;
       return;
     }
 
@@ -216,6 +221,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
       setSubmitError('failed to submit registration. please try again.');
     } finally {
       setSubmitting(false);
+      submitLockRef.current = false;
     }
   };
 
