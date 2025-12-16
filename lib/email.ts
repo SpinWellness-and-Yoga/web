@@ -3,6 +3,37 @@ import { logger } from './logger';
 import { EMAIL_CONFIG } from './constants';
 import { redisDel, redisGet, redisSet, redisSetNx } from './redis';
 
+function safeBrevoMeta(result: any): Record<string, any> {
+  const statusCode = result?.response?.statusCode;
+  const headers = result?.response?.headers;
+  const messageId = result?.body?.messageId || result?.body?.message_id;
+  const requestId =
+    headers?.['x-request-id'] ||
+    headers?.['x-brevo-request-id'] ||
+    headers?.['x-sib-request-id'] ||
+    headers?.['x-amzn-requestid'];
+
+  const meta: Record<string, any> = {};
+  if (typeof statusCode === 'number') meta.status_code = statusCode;
+  if (requestId) meta.request_id = String(requestId);
+  if (messageId) meta.message_id = String(messageId);
+  return meta;
+}
+
+function safeBrevoErrorMeta(error: any): Record<string, any> {
+  const statusCode = error?.status || error?.statusCode || error?.response?.status;
+  const message = error?.message ? String(error.message) : 'unknown error';
+  const name = error?.name ? String(error.name) : 'error';
+  const body = error?.response?.body || error?.body;
+  const bodyType = body ? typeof body : undefined;
+
+  const meta: Record<string, any> = { name, message };
+  if (typeof statusCode === 'number') meta.status_code = statusCode;
+  if (bodyType && bodyType !== 'string') meta.body_type = bodyType;
+  if (typeof body === 'string') meta.body_length = body.length;
+  return meta;
+}
+
 function getEnvVar(key: string, env?: any): string | undefined {
   // check passed env first (for cloudflare workers)
   if (env?.[key]) return env[key];
@@ -114,12 +145,15 @@ async function sendEmailWithRetry(
 
   for (let attempt = 1; attempt <= EMAIL_CONFIG.RETRY_ATTEMPTS; attempt++) {
     try {
+      logger.info('brevo send attempt', { email_type: emailType, attempt });
       const result = await Promise.race([
         apiInstance.sendTransacEmail(payload),
         new Promise((_, reject) => 
           setTimeout(() => reject(new Error('email send timeout')), EMAIL_CONFIG.SEND_TIMEOUT_MS)
         )
       ]) as any;
+
+      logger.info('brevo send response', { email_type: emailType, attempt, ...safeBrevoMeta(result) });
       
       if (result?.response?.statusCode >= 200 && result?.response?.statusCode < 300) {
         logger.info(`${emailType} email sent successfully`);
@@ -134,6 +168,7 @@ async function sendEmailWithRetry(
       throw new Error(`email send failed with status ${result?.response?.statusCode}`);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
+      logger.warn('brevo send failed', { email_type: emailType, attempt, ...safeBrevoErrorMeta(error) });
 
       // if the request timed out, we can't know whether the provider will still deliver.
       // to avoid duplicates, stop retrying and keep a short "pending" lock.
@@ -168,8 +203,8 @@ export function renderEventRegistrationConfirmationEmail(entry: {
   ticket_number: string;
   location_preference: string;
 }): { subject: string; html: string } {
-  const logoUrl = 'https://spinwellnessandyoga.com/logos/SWAY-Primary-logo-(iteration).png';
-  const siteBaseUrl = 'https://spinwellnessandyoga.com';
+  const logoUrl = 'https://www.spinwellnessandyoga.com/logos/SWAY-logomark-PNG.png';
+  const siteBaseUrl = 'https://www.spinwellnessandyoga.com';
   const address = entry.event_address?.trim() || '';
   const mapsUrl = address
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
@@ -235,9 +270,9 @@ export function renderEventRegistrationConfirmationEmail(entry: {
 
   const emailBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="text-align: center; margin-bottom: 10px; padding-top: 14px;">
-        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 260px; width: 100%; height: auto; display: block; margin: 0 auto 6px;" />
-        <h1 style="color: #151b47; font-size: 16px; margin: 0; font-weight: 400; font-family: 'Vermost', 'Trebuchet MS', 'Segoe UI', Arial, sans-serif;">You're Registered!!</h1>
+      <div style="text-align: center; margin-bottom: 8px; padding-top: 0;">
+        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="width: 260px; max-width: 260px; height: auto; display: block; margin: 0 auto 2px; border: 0; outline: none; text-decoration: none;" />
+        <h1 style="color: #151b47; font-size: 16px; margin: 0; padding: 0; line-height: 1.15; font-weight: 400; font-family: 'Vermost', 'Trebuchet MS', 'Segoe UI', Arial, sans-serif;">You're Registered!!</h1>
       </div>
       
       <div style="background: #fef9f5; padding: 30px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #f16f64;">
@@ -322,7 +357,7 @@ export async function sendWaitlistConfirmation(entry: {
     return;
   }
 
-  const logoUrl = 'https://spinwellnessandyoga.com/logos/SWAY-Primary-logo-(iteration).png';
+  const logoUrl = 'https://www.spinwellnessandyoga.com/logos/SWAY-Primary-logo-(iteration).png';
 
   const emailBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -555,7 +590,7 @@ export async function sendEventReminder(entry: {
     return;
   }
 
-  const logoUrl = 'https://spinwellnessandyoga.com/logos/email-logo.png';
+  const logoUrl = 'https://www.spinwellnessandyoga.com/logos/SWAY-logomark-PNG.png';
 
   const escapeHtml = (text: string) => {
     const map: { [key: string]: string } = {
@@ -570,8 +605,8 @@ export async function sendEventReminder(entry: {
 
   const emailBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="text-align: center; margin-bottom: 30px;">
-        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="max-width: 400px; width: 100%; height: auto; display: block; margin: 0 auto 20px;" />
+      <div style="text-align: center; margin-bottom: 18px;">
+        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="width: 260px; max-width: 260px; height: auto; display: block; margin: 0 auto 8px; border: 0; outline: none; text-decoration: none;" />
         <h1 style="color: #151b47; font-size: 28px; margin: 0 0 10px;">Event Reminder</h1>
       </div>
       
