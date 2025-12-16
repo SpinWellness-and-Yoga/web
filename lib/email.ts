@@ -1,25 +1,24 @@
-import { Resend } from 'resend';
+import * as brevo from '@getbrevo/brevo';
 import { logger } from './logger';
 import { EMAIL_CONFIG } from './constants';
 
 function getEnvVar(key: string, env?: any): string | undefined {
-  if (typeof process !== 'undefined' && process.env?.[key]) {
-    return process.env[key];
-  }
-  
+  // check passed env first (for cloudflare workers)
   if (env?.[key]) return env[key];
   if (env?.env?.[key]) return env.env[key];
   if (env?.vars?.[key]) return env.vars[key];
   
+  // check process.env (for next.js)
+  if (process.env[key]) {
+    return process.env[key];
+  }
+  
+  // check global env (for cloudflare)
   if (typeof globalThis !== 'undefined') {
     const g = globalThis as any;
     if (g.env?.[key]) return g.env[key];
     if (g.__env__?.[key]) return g.__env__[key];
     if (g.__CLOUDFLARE_ENV__?.[key]) return g.__CLOUDFLARE_ENV__[key];
-  }
-  
-  if (typeof process !== 'undefined' && process.env) {
-    return process.env[key];
   }
   
   return undefined;
@@ -36,9 +35,23 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 
+function getBrevoClient(env?: any): brevo.TransactionalEmailsApi | null {
+  const brevoApiKey = getEnvVar('BREVO_API_KEY', env);
+  
+  if (!brevoApiKey) {
+    logger.error('brevo api key not found');
+    return null;
+  }
+
+  const apiInstance = new brevo.TransactionalEmailsApi();
+  apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, brevoApiKey);
+  
+  return apiInstance;
+}
+
 async function sendEmailWithRetry(
-  resend: Resend,
-  payload: any,
+  apiInstance: brevo.TransactionalEmailsApi,
+  payload: brevo.SendSmtpEmail,
   emailType: string
 ): Promise<void> {
   let lastError: Error | undefined;
@@ -46,43 +59,29 @@ async function sendEmailWithRetry(
   for (let attempt = 1; attempt <= EMAIL_CONFIG.RETRY_ATTEMPTS; attempt++) {
     try {
       const result = await Promise.race([
-        resend.emails.send(payload),
+        apiInstance.sendTransacEmail(payload),
         new Promise((_, reject) => 
           setTimeout(() => reject(new Error('email send timeout')), EMAIL_CONFIG.SEND_TIMEOUT_MS)
         )
       ]) as any;
       
-      if (result?.error) {
-        throw new Error(result.error.message || result.error.name || 'email send failed');
-      }
-      
-      if (result?.data?.id) {
-        logger.info(`${emailType} email sent`, { 
-          emailId: result.data.id, 
-          to: payload.to,
-          attempt,
-        });
+      if (result?.response?.statusCode >= 200 && result?.response?.statusCode < 300) {
+        logger.info(`${emailType} email sent successfully`);
         return;
       }
       
-      throw new Error('unexpected email response format');
+      throw new Error(`email send failed with status ${result?.response?.statusCode}`);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       
       if (attempt < EMAIL_CONFIG.RETRY_ATTEMPTS) {
-        logger.warn(`${emailType} email send failed, retrying`, { 
-          attempt, 
-          error: lastError.message,
-        });
+        logger.warn(`${emailType} email send failed, retrying attempt ${attempt + 1}`);
         await new Promise(resolve => setTimeout(resolve, EMAIL_CONFIG.RETRY_DELAY_MS * attempt));
+      } else {
+        logger.error(`${emailType} email failed after ${EMAIL_CONFIG.RETRY_ATTEMPTS} attempts`);
       }
     }
   }
-
-  logger.error(`${emailType} email failed after retries`, lastError, { 
-    attempts: EMAIL_CONFIG.RETRY_ATTEMPTS,
-    to: payload.to,
-  });
 }
 
 export function renderEventRegistrationConfirmationEmail(entry: {
@@ -186,17 +185,9 @@ export function renderEventRegistrationConfirmationEmail(entry: {
         <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Date:</strong> ${escapeHtml(entry.event_date)}</p>
         <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Time:</strong> ${escapeHtml(entry.event_time)}</p>
         <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.event_location)}</p>
-        ${address ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Address:</strong> <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #ffffff; text-decoration: underline;">${escapeHtml(address)}</a></p>` : ''}
+        ${address ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0 14px; font-size: 16px;"><strong>Address:</strong> <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #ffffff; text-decoration: underline;">${escapeHtml(address)}</a></p>` : ''}
+        ${googleCalendarUrl ? `<div style="text-align: center; margin-top: 12px;"><a href="${googleCalendarUrl}" style="display: inline-block; background: rgba(255, 255, 255, 0.2); color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.3);">add to calendar</a></div>` : ''}
       </div>
-
-      ${(googleCalendarUrl || icsUrl) ? `
-      <div style="margin-bottom: 30px; text-align: left;">
-        <div style="display: inline-flex; gap: 12px; flex-wrap: wrap;">
-          ${googleCalendarUrl ? `<a href="${googleCalendarUrl}" style="display: inline-block; background: #151b47; color: #ffffff; text-decoration: none; padding: 12px 16px; border-radius: 10px; font-weight: 600; font-size: 14px;">Add to Google Calendar</a>` : ''}
-          ${icsUrl ? `<a href="${icsUrl}" style="display: inline-block; background: #ffffff; color: #151b47; text-decoration: none; padding: 12px 16px; border-radius: 10px; font-weight: 600; font-size: 14px; border: 2px solid #151b47;">Download .ics</a>` : ''}
-        </div>
-      </div>
-      ` : ''}
 
       <div style="margin-bottom: 18px; text-align: left;">
         <p style="margin: 0; font-size: 14px; color: #666;">For enquiries, email <a href="mailto:admin@spinwellnessandyoga.com" style="color: #f16f64; text-decoration: underline;">admin@spinwellnessandyoga.com</a>.</p>
@@ -221,11 +212,10 @@ export async function sendWaitlistNotification(entry: {
   team_size?: string;
   priority?: string;
 }, env?: any): Promise<void> {
-  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
+  const apiInstance = getBrevoClient(env);
   const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellnessandyoga.com';
 
-  if (!resendApiKey) {
-    logger.error('resend api key not found for waitlist notification');
+  if (!apiInstance) {
     return;
   }
 
@@ -240,15 +230,14 @@ export async function sendWaitlistNotification(entry: {
     <p style="color: #666; font-size: 0.9em;">automated notification from spinwellness waitlist</p>
   `;
 
-  const emailPayload = {
-    from: 'Spinwellness Waitlist <admin@spinwellnessandyoga.com>',
-    to: [adminEmail],
-    subject: `new waitlist entry: ${entry.company}`,
-    html: emailBody,
-  };
-    
-    const resend = new Resend(resendApiKey);
-  await sendEmailWithRetry(resend, emailPayload, 'waitlist-notification');
+  const senderEmail = getEnvVar('BREVO_SENDER_EMAIL', env) || 'admin@spinwellnessandyoga.com';
+  const sendSmtpEmail = new brevo.SendSmtpEmail();
+  sendSmtpEmail.sender = { name: 'Spinwellness Waitlist', email: senderEmail };
+  sendSmtpEmail.to = [{ email: adminEmail }];
+  sendSmtpEmail.subject = `new waitlist entry: ${entry.company}`;
+  sendSmtpEmail.htmlContent = emailBody;
+
+  await sendEmailWithRetry(apiInstance, sendSmtpEmail, 'waitlist-notification');
 }
 
 export async function sendWaitlistConfirmation(entry: {
@@ -256,10 +245,10 @@ export async function sendWaitlistConfirmation(entry: {
   email: string;
   company: string;
 }, env?: any): Promise<void> {
-  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
+  const apiInstance = getBrevoClient(env);
 
-  if (!resendApiKey) {
-    console.error('[sendWaitlistConfirmation] RESEND_API_KEY not found');
+  if (!apiInstance) {
+    logger.error('waitlist confirmation: brevo api key not found');
     return;
   }
 
@@ -284,21 +273,19 @@ export async function sendWaitlistConfirmation(entry: {
     </div>
   `;
 
-  const emailPayload = {
-    from: 'Spinwellness & Yoga <admin@spinwellnessandyoga.com>',
-    to: [entry.email],
-    subject: 'Welcome to the Spinwellness Waitlist!',
-    html: emailBody,
-  };
+  const senderEmail = getEnvVar('BREVO_SENDER_EMAIL', env) || 'admin@spinwellnessandyoga.com';
 
   try {
-    const resend = new Resend(resendApiKey);
-    const result = await resend.emails.send(emailPayload);
-    if (result.error) {
-      console.error('[sendWaitlistConfirmation] Resend API error:', result.error);
-    }
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = { name: 'Spinwellness & Yoga', email: senderEmail };
+    sendSmtpEmail.to = [{ email: entry.email }];
+    sendSmtpEmail.subject = 'Welcome to the Spinwellness Waitlist!';
+    sendSmtpEmail.htmlContent = emailBody;
+
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    logger.info('waitlist confirmation email sent successfully');
   } catch (error) {
-    console.error('[sendWaitlistConfirmation] Exception caught:', error);
+    logger.error('waitlist confirmation email failed');
   }
 }
 
@@ -307,16 +294,16 @@ export async function sendContactNotification(entry: {
   email: string;
   message: string;
 }, env?: any): Promise<void> {
-  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
+  const apiInstance = getBrevoClient(env);
   const adminEmail = getEnvVar('ADMIN_EMAIL', env);
 
   if (!adminEmail || !adminEmail.includes('@')) {
-    console.error('[sendContactNotification] Invalid ADMIN_EMAIL:', adminEmail);
+    logger.error('contact notification: invalid admin email');
     return;
   }
 
-  if (!resendApiKey) {
-    console.error('[sendContactNotification] RESEND_API_KEY not found');
+  if (!apiInstance) {
+    logger.error('contact notification: brevo api key not found');
     return;
   }
 
@@ -330,21 +317,19 @@ export async function sendContactNotification(entry: {
     <p style="color: #666; font-size: 0.9em;">This is an automated notification from the Spinwellness contact form.</p>
   `;
 
-  const emailPayload = {
-    from: 'Spinwellness Contact Form <admin@spinwellnessandyoga.com>',
-    to: [adminEmail],
-    subject: `New Contact: ${entry.name}`,
-    html: emailBody,
-  };
-
+  const senderEmail = getEnvVar('BREVO_SENDER_EMAIL', env) || 'admin@spinwellnessandyoga.com';
+  
   try {
-    const resend = new Resend(resendApiKey);
-    const result = await resend.emails.send(emailPayload);
-    if (result.error) {
-      console.error('[sendContactNotification] Resend API error:', result.error);
-    }
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = { name: 'Spinwellness Contact Form', email: senderEmail };
+    sendSmtpEmail.to = [{ email: adminEmail }];
+    sendSmtpEmail.subject = `New Contact: ${entry.name}`;
+    sendSmtpEmail.htmlContent = emailBody;
+
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    logger.info('contact notification email sent successfully');
   } catch (error) {
-    console.error('[sendContactNotification] Exception caught:', error);
+    logger.error('contact notification email failed');
   }
 }
 
@@ -352,10 +337,10 @@ export async function sendContactConfirmation(entry: {
   name: string;
   email: string;
 }, env?: any): Promise<void> {
-  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
+  const apiInstance = getBrevoClient(env);
 
-  if (!resendApiKey) {
-    console.error('[sendContactConfirmation] RESEND_API_KEY not found');
+  if (!apiInstance) {
+    logger.error('contact confirmation: brevo api key not found');
     return;
   }
 
@@ -380,21 +365,19 @@ export async function sendContactConfirmation(entry: {
     </div>
   `;
 
-  const emailPayload = {
-    from: 'Spinwellness & Yoga <admin@spinwellnessandyoga.com>',
-    to: [entry.email],
-    subject: 'Thank you for contacting Spinwellness & Yoga',
-    html: emailBody,
-  };
-
+  const senderEmail = getEnvVar('BREVO_SENDER_EMAIL', env) || 'admin@spinwellnessandyoga.com';
+  
   try {
-    const resend = new Resend(resendApiKey);
-    const result = await resend.emails.send(emailPayload);
-    if (result.error) {
-      console.error('[sendContactConfirmation] Resend API error:', result.error);
-    }
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = { name: 'Spinwellness & Yoga', email: senderEmail };
+    sendSmtpEmail.to = [{ email: entry.email }];
+    sendSmtpEmail.subject = 'Thank you for contacting Spinwellness & Yoga';
+    sendSmtpEmail.htmlContent = emailBody;
+
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    logger.info('contact confirmation email sent successfully');
   } catch (error) {
-    console.error('[sendContactConfirmation] Exception caught:', error);
+    logger.error('contact confirmation email failed');
   }
 }
 
@@ -412,7 +395,7 @@ export async function sendEventRegistrationNotification(entry: {
   notes?: string;
   ticket_number: string;
 }, env?: any): Promise<void> {
-  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
+  const apiInstance = getBrevoClient(env);
   const adminEmail = getEnvVar('ADMIN_EMAIL', env) || 'admin@spinwellnessandyoga.com';
 
   if (!adminEmail || !adminEmail.includes('@')) {
@@ -420,8 +403,7 @@ export async function sendEventRegistrationNotification(entry: {
     return;
   }
 
-  if (!resendApiKey) {
-    logger.error('resend api key not found for registration notification');
+  if (!apiInstance) {
     return;
   }
 
@@ -445,15 +427,14 @@ export async function sendEventRegistrationNotification(entry: {
     <p style="color: #666; font-size: 0.9em;">automated notification from spinwellness event registration</p>
   `;
 
-  const emailPayload = {
-    from: 'Spinwellness Events <admin@spinwellnessandyoga.com>',
-    to: [adminEmail],
-    subject: `new registration: ${entry.event_name} - ${entry.name}`,
-    html: emailBody,
-  };
+  const senderEmail = getEnvVar('BREVO_SENDER_EMAIL', env) || 'admin@spinwellnessandyoga.com';
+  const sendSmtpEmail = new brevo.SendSmtpEmail();
+  sendSmtpEmail.sender = { name: 'Spinwellness Events', email: senderEmail };
+  sendSmtpEmail.to = [{ email: adminEmail }];
+  sendSmtpEmail.subject = `new registration: ${entry.event_name} - ${entry.name}`;
+  sendSmtpEmail.htmlContent = emailBody;
 
-  const resend = new Resend(resendApiKey);
-  await sendEmailWithRetry(resend, emailPayload, 'registration-notification');
+  await sendEmailWithRetry(apiInstance, sendSmtpEmail, 'registration-notification');
 }
 
 export async function sendEventRegistrationConfirmation(entry: {
@@ -467,24 +448,23 @@ export async function sendEventRegistrationConfirmation(entry: {
   ticket_number: string;
   location_preference: string;
 }, env?: any): Promise<void> {
-  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
+  const apiInstance = getBrevoClient(env);
 
-  if (!resendApiKey) {
-    logger.error('resend api key not found for registration confirmation');
+  if (!apiInstance) {
+    logger.error('brevo api key not found for registration confirmation');
     return;
   }
 
   const rendered = renderEventRegistrationConfirmationEmail(entry);
 
-  const emailPayload = {
-    from: 'Spinwellness & Yoga <admin@spinwellnessandyoga.com>',
-    to: [entry.email],
-    subject: rendered.subject,
-    html: rendered.html,
-  };
+  const senderEmail = getEnvVar('BREVO_SENDER_EMAIL', env) || 'admin@spinwellnessandyoga.com';
+  const sendSmtpEmail = new brevo.SendSmtpEmail();
+  sendSmtpEmail.sender = { name: 'Spinwellness & Yoga', email: senderEmail };
+  sendSmtpEmail.to = [{ email: entry.email }];
+  sendSmtpEmail.subject = rendered.subject;
+  sendSmtpEmail.htmlContent = rendered.html;
 
-  const resend = new Resend(resendApiKey);
-  await sendEmailWithRetry(resend, emailPayload, 'registration-confirmation');
+  await sendEmailWithRetry(apiInstance, sendSmtpEmail, 'registration-confirmation');
 }
 
 export async function sendEventReminder(entry: {
@@ -496,10 +476,10 @@ export async function sendEventReminder(entry: {
   ticket_number: string;
   location_preference: string;
 }, env?: any): Promise<void> {
-  const resendApiKey = getEnvVar('RESEND_API_KEY', env);
+  const apiInstance = getBrevoClient(env);
 
-  if (!resendApiKey) {
-    console.error('[sendEventReminder] RESEND_API_KEY not found');
+  if (!apiInstance) {
+    logger.error('event reminder: brevo api key not found');
     return;
   }
 
@@ -546,22 +526,18 @@ export async function sendEventReminder(entry: {
     </div>
   `;
 
-  const emailPayload = {
-    from: 'Spinwellness & Yoga <admin@spinwellnessandyoga.com>',
-    to: [entry.email],
-    subject: `Reminder: ${entry.event_name} is in 2 days!`,
-    html: emailBody,
-  };
-
+  const senderEmail = getEnvVar('BREVO_SENDER_EMAIL', env) || 'admin@spinwellnessandyoga.com';
+  
   try {
-    const resend = new Resend(resendApiKey);
-    const result = await resend.emails.send(emailPayload);
-    if (result.error) {
-      console.log('[sendEventReminder] Email sending failed:', result.error.message || 'domain not verified');
-    } else {
-      console.log('[sendEventReminder] Reminder email sent successfully');
-    }
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = { name: 'Spinwellness & Yoga', email: senderEmail };
+    sendSmtpEmail.to = [{ email: entry.email }];
+    sendSmtpEmail.subject = `Reminder: ${entry.event_name} is in 2 days!`;
+    sendSmtpEmail.htmlContent = emailBody;
+
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    logger.info('event reminder email sent successfully');
   } catch (error) {
-    console.log('[sendEventReminder] Email sending failed:', error instanceof Error ? error.message : 'unknown error');
+    logger.error('event reminder email failed');
   }
 }

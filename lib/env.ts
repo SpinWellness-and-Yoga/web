@@ -16,7 +16,7 @@ export function validateEnvVars(): void {
   const required = [
     'NEXT_PUBLIC_SUPABASE_URL',
     'SUPABASE_SERVICE_ROLE_KEY',
-    'RESEND_API_KEY',
+    'BREVO_API_KEY',
   ];
 
   const missing: string[] = [];
@@ -42,8 +42,8 @@ export const env = {
     serviceKey: () => getEnvVar('SUPABASE_SERVICE_ROLE_KEY', true)!,
     anonKey: () => getEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
   },
-  resend: {
-    apiKey: () => getEnvVar('RESEND_API_KEY', true)!,
+  brevo: {
+    apiKey: () => getEnvVar('BREVO_API_KEY', true)!,
   },
   admin: {
     email: () => getEnvVar('ADMIN_EMAIL') || 'admin@spinwellnessandyoga.com',
