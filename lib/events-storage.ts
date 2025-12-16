@@ -231,7 +231,7 @@ export async function getEventByIdWithCount(id: string, request?: Request): Prom
       .single();
     
     if (error) {
-      logger.warn('event not found or error', { eventId: id, error: error.message });
+      logger.warn('event not found or error');
       return null;
     }
     
@@ -248,7 +248,7 @@ export async function getEventByIdWithCount(id: string, request?: Request): Prom
     await cacheSetJson(cacheKey, event, CACHE_CONFIG.EVENT_DETAIL_TTL);
     return event;
   } catch (error) {
-    logger.error('exception fetching event by id', error, { eventId: id });
+    logger.error('exception fetching event by id', error);
     return null;
   } finally {
     inflight.delete(cacheKey);
@@ -329,18 +329,18 @@ export async function checkDuplicateRegistration(eventId: string, email: string,
       .maybeSingle();
     
     if (error && error.code !== 'PGRST116') {
-      logger.error('error checking duplicate registration', error, { eventId, email: normalizedEmail });
+      logger.error('error checking duplicate registration', error);
       return false;
     }
     
     const isDuplicate = !!data;
     if (isDuplicate) {
-      logger.info('duplicate registration detected', { eventId, email: normalizedEmail });
+      logger.info('duplicate registration detected');
     }
     
     return isDuplicate;
   } catch (error) {
-    logger.error('exception checking duplicate registration', error, { eventId, email: normalizedEmail });
+    logger.error('exception checking duplicate registration', error);
     return false;
   }
 }
@@ -369,13 +369,13 @@ export async function createEventRegistration(
       .single();
 
     if (eventError || !eventData) {
-      logger.error('event not found during registration', eventError, { eventId: registration.event_id });
+      logger.error('event not found during registration', eventError);
       throw new Error('event not found');
     }
 
     const registrationCount = eventData.event_registrations?.[0]?.count || 0;
     if (eventData.capacity > 0 && registrationCount >= eventData.capacity) {
-      logger.warn('event at capacity', { eventId: registration.event_id, capacity: eventData.capacity });
+      logger.warn('event at capacity');
       throw new Error('event is at capacity');
     }
 
@@ -414,21 +414,14 @@ export async function createEventRegistration(
       'events:all:with-counts',
     ]);
 
-    logger.info('registration created successfully', { 
-      eventId: registration.event_id, 
-      ticketNumber,
-      email: normalizedEmail 
-    });
+    logger.info('registration created successfully');
 
     return {
       ...data,
       needs_directions: data.needs_directions ? 1 : 0,
     } as EventRegistration;
   } catch (error) {
-    logger.error('exception creating registration', error, { 
-      eventId: registration.event_id, 
-      email: normalizedEmail 
-    });
+    logger.error('exception creating registration', error);
     throw error;
   }
 }

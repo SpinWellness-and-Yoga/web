@@ -185,8 +185,7 @@ export function renderEventRegistrationConfirmationEmail(entry: {
         <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Date:</strong> ${escapeHtml(entry.event_date)}</p>
         <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Time:</strong> ${escapeHtml(entry.event_time)}</p>
         <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.event_location)}</p>
-        ${address ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0 14px; font-size: 16px;"><strong>Address:</strong> <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #ffffff; text-decoration: underline;">${escapeHtml(address)}</a></p>` : ''}
-        ${googleCalendarUrl ? `<div style="text-align: center; margin-top: 12px;"><a href="${googleCalendarUrl}" style="display: inline-block; background: rgba(255, 255, 255, 0.2); color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.3);">add to calendar</a></div>` : ''}
+        ${address ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Address:</strong> <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #ffffff; text-decoration: underline;">${escapeHtml(address)}</a></p>` : ''}
       </div>
 
       <div style="margin-bottom: 18px; text-align: left;">
@@ -443,6 +442,8 @@ export async function sendEventRegistrationConfirmation(entry: {
   event_time: string;
   event_location: string;
   event_address?: string;
+  event_start_iso?: string;
+  event_end_iso?: string;
   name: string;
   email: string;
   ticket_number: string;
