@@ -95,10 +95,15 @@ export async function getRedis(): Promise<RedisClient | null> {
 }
 
 export async function redisGet(key: string): Promise<string | null> {
-  const c = await getRedis();
-  if (!c) return null;
   try {
-    return await c.get(prefixKey(key));
+    const c = await getRedis();
+    if (!c) return null;
+    try {
+      return await c.get(prefixKey(key));
+    } catch {
+      logger.warn('redis get failed');
+      return null;
+    }
   } catch {
     logger.warn('redis get failed');
     return null;
@@ -106,34 +111,63 @@ export async function redisGet(key: string): Promise<string | null> {
 }
 
 export async function redisSet(key: string, value: string, ttlSeconds: number): Promise<void> {
-  const c = await getRedis();
-  if (!c) return;
   try {
-    await c.set(prefixKey(key), value, { EX: ttlSeconds });
+    const c = await getRedis();
+    if (!c) return;
+    try {
+      await c.set(prefixKey(key), value, { EX: ttlSeconds });
+    } catch {
+      logger.warn('redis set failed');
+    }
   } catch {
     logger.warn('redis set failed');
   }
 }
 
+export async function redisSetNx(key: string, value: string, ttlSeconds: number): Promise<boolean> {
+  try {
+    const c = await getRedis();
+    if (!c) return false;
+    try {
+      const res = await c.set(prefixKey(key), value, { EX: ttlSeconds, NX: true });
+      return res === 'OK';
+    } catch {
+      logger.warn('redis setnx failed');
+      return false;
+    }
+  } catch {
+    logger.warn('redis setnx failed');
+    return false;
+  }
+}
+
 export async function redisDel(keys: string[]): Promise<void> {
   if (keys.length === 0) return;
-  const c = await getRedis();
-  if (!c) return;
   try {
-    await c.del(keys.map(prefixKey));
+    const c = await getRedis();
+    if (!c) return;
+    try {
+      await c.del(keys.map(prefixKey));
+    } catch {
+      logger.warn('redis del failed', { keysCount: keys.length });
+    }
   } catch {
     logger.warn('redis del failed', { keysCount: keys.length });
   }
 }
 
 export async function redisPing(): Promise<{ ok: boolean; latencyMs?: number }> {
-  const c = await getRedis();
-  if (!c) return { ok: false };
-  const start = Date.now();
   try {
-    const res = await c.ping();
-    if (res !== 'PONG') return { ok: false };
-    return { ok: true, latencyMs: Date.now() - start };
+    const c = await getRedis();
+    if (!c) return { ok: false };
+    const start = Date.now();
+    try {
+      const res = await c.ping();
+      if (res !== 'PONG') return { ok: false };
+      return { ok: true, latencyMs: Date.now() - start };
+    } catch {
+      return { ok: false };
+    }
   } catch {
     return { ok: false };
   }

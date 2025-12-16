@@ -1,6 +1,7 @@
 import * as brevo from '@getbrevo/brevo';
 import { logger } from './logger';
 import { EMAIL_CONFIG } from './constants';
+import { redisDel, redisGet, redisSet, redisSetNx } from './redis';
 
 function getEnvVar(key: string, env?: any): string | undefined {
   // check passed env first (for cloudflare workers)
@@ -54,6 +55,61 @@ async function sendEmailWithRetry(
   payload: brevo.SendSmtpEmail,
   emailType: string
 ): Promise<void> {
+  // prevent duplicate deliveries when the provider responds with transient 5xx/timeouts.
+  // if we can't be sure the first attempt didn't send, we avoid retrying and dedupe subsequent calls by key.
+  const dedupeKeyRaw = (() => {
+    const toEmail = payload.to?.[0]?.email?.trim().toLowerCase();
+    const subject = payload.subject?.trim();
+    if (!toEmail || !subject) return '';
+    return `email:dedupe:${emailType}:${toEmail}:${subject}`;
+  })();
+
+  const inMemoryDedupe = (globalThis as any).__swayEmailDedupe as Map<string, number> | undefined;
+  const dedupeMap: Map<string, number> = inMemoryDedupe ?? new Map<string, number>();
+  (globalThis as any).__swayEmailDedupe = dedupeMap;
+
+  const now = Date.now();
+  for (const [k, exp] of dedupeMap.entries()) {
+    if (now > exp) dedupeMap.delete(k);
+  }
+
+  const pendingTtlSeconds = 90;
+  const sentTtlSeconds = 60 * 60 * 24 * 7;
+  const pendingKey = dedupeKeyRaw ? `${dedupeKeyRaw}:pending` : '';
+  const sentKey = dedupeKeyRaw ? `${dedupeKeyRaw}:sent` : '';
+
+  if (sentKey) {
+    const alreadySent = await redisGet(sentKey);
+    if (alreadySent) {
+      logger.info('email deduped (already sent)');
+      return;
+    }
+    const memSent = dedupeMap.get(sentKey);
+    if (memSent && now < memSent) {
+      logger.info('email deduped (already sent)');
+      return;
+    }
+  }
+
+  if (pendingKey) {
+    const pending = await redisGet(pendingKey);
+    if (pending) {
+      logger.info('email deduped (pending)');
+      return;
+    }
+    const memPending = dedupeMap.get(pendingKey);
+    if (memPending && now < memPending) {
+      logger.info('email deduped (pending)');
+      return;
+    }
+
+    const locked = await redisSetNx(pendingKey, '1', pendingTtlSeconds);
+    if (!locked) {
+      // if redis is disabled/unavailable, fall back to a short in-memory lock.
+      dedupeMap.set(pendingKey, now + pendingTtlSeconds * 1000);
+    }
+  }
+
   let lastError: Error | undefined;
 
   for (let attempt = 1; attempt <= EMAIL_CONFIG.RETRY_ATTEMPTS; attempt++) {
@@ -67,12 +123,24 @@ async function sendEmailWithRetry(
       
       if (result?.response?.statusCode >= 200 && result?.response?.statusCode < 300) {
         logger.info(`${emailType} email sent successfully`);
+        if (pendingKey) await redisDel([pendingKey]);
+        if (sentKey) {
+          await redisSet(sentKey, '1', sentTtlSeconds);
+          dedupeMap.set(sentKey, Date.now() + sentTtlSeconds * 1000);
+        }
         return;
       }
       
       throw new Error(`email send failed with status ${result?.response?.statusCode}`);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
+
+      // if the request timed out, we can't know whether the provider will still deliver.
+      // to avoid duplicates, stop retrying and keep a short "pending" lock.
+      if (lastError.message.includes('timeout')) {
+        logger.warn(`${emailType} email timed out, skipping retry to prevent duplicates`);
+        return;
+      }
       
       if (attempt < EMAIL_CONFIG.RETRY_ATTEMPTS) {
         logger.warn(`${emailType} email send failed, retrying attempt ${attempt + 1}`);
@@ -82,6 +150,9 @@ async function sendEmailWithRetry(
       }
     }
   }
+
+  // if we failed definitively, clear the pending lock so a future attempt can try again.
+  if (pendingKey) await redisDel([pendingKey]);
 }
 
 export function renderEventRegistrationConfirmationEmail(entry: {
@@ -518,7 +589,13 @@ export async function sendEventReminder(entry: {
           <p style="margin: 0; font-size: 24px; font-weight: bold; color: #f16f64; letter-spacing: 2px;">${escapeHtml(entry.ticket_number)}</p>
         </div>
         <p style="margin: 15px 0; font-size: 16px;">Please remember to bring your ticket number with you. We can&apos;t wait to see you there!</p>
-        ${entry.location_preference ? `<p style="margin: 0; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.location_preference)}</p>` : ''}
+        ${entry.location_preference ? `<p style="margin: 0 0 15px; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.location_preference)}</p>` : ''}
+      </div>
+
+      <div style="background: #fff9f5; padding: 24px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #f16f64;">
+        <p style="margin: 0 0 12px; font-size: 15px; color: #322216;"><strong>can&apos;t make it?</strong></p>
+        <p style="margin: 0 0 16px; font-size: 14px; color: #666; line-height: 1.6;">if you&apos;re unable to attend, please cancel your ticket so someone else can take your spot.</p>
+        <a href="https://spinwellnessandyoga.com/cancel" style="display: inline-block; padding: 10px 20px; background: #ffffff; color: #f16f64; text-decoration: none; border: 2px solid #f16f64; border-radius: 8px; font-weight: 600; font-size: 14px;">cancel ticket</a>
       </div>
       
       <div style="text-align: center; padding-top: 20px; border-top: 1px solid #e0e0e0;">
