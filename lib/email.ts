@@ -71,7 +71,7 @@ function getBrevoClient(env?: any): brevo.TransactionalEmailsApi | null {
   const brevoApiKey = getEnvVar('BREVO_API_KEY', env);
   
   if (!brevoApiKey) {
-    logger.error('brevo api key not found');
+    logger.error('brevo api key not found', undefined, { env_key: 'BREVO_API_KEY' });
     return null;
   }
 

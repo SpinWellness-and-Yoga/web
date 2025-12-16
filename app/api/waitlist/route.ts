@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendWaitlistNotification, sendWaitlistConfirmation } from "../../../lib/email";
+import { logger } from "../../../lib/logger";
 
 function getEnvFromRequest(request: Request): any {
   const req = request as any;
@@ -62,14 +63,30 @@ export async function POST(request: Request) {
       priority,
     };
 
-    Promise.all([
+    // await email sends so serverless/worker runtimes don't terminate early
+    const emailTimeoutMs = 8000;
+    const emailTasks = [
       sendWaitlistNotification(entry, env),
-      sendWaitlistConfirmation({
-        full_name: entry.full_name,
-        email: entry.email,
-        company: entry.company,
-      }, env),
-    ]).catch(() => {});
+      sendWaitlistConfirmation(
+        {
+          full_name: entry.full_name,
+          email: entry.email,
+          company: entry.company,
+        },
+        env
+      ),
+    ];
+    const settled = await Promise.race([
+      Promise.allSettled(emailTasks),
+      new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), emailTimeoutMs)),
+    ]);
+
+    if (settled === 'timeout') {
+      logger.warn('waitlist email send timed out', { timeout_ms: emailTimeoutMs });
+    } else {
+      const failed = settled.filter((r) => r.status === 'rejected').length;
+      if (failed > 0) logger.warn('waitlist email send had failures', { failed, total: settled.length });
+    }
 
     return NextResponse.json(
       {
