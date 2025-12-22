@@ -125,6 +125,21 @@ export async function POST(request: Request) {
       );
     }
 
+    // ensure location matches event
+    const eventLoc = event.location?.toLowerCase() || '';
+    const isLagos = eventLoc.includes('lagos') || event_id.includes('lagos');
+    const isIbadan = eventLoc.includes('ibadan') || event_id.includes('ibadan');
+    const providedLoc = sanitizedInput.location_preference.toLowerCase().trim();
+    
+    if (isLagos && providedLoc !== 'lagos') {
+      return NextResponse.json({ error: 'location must match event' }, { status: 400 });
+    }
+    if (isIbadan && providedLoc !== 'ibadan') {
+      return NextResponse.json({ error: 'location must match event' }, { status: 400 });
+    }
+    
+    sanitizedInput.location_preference = isLagos ? 'lagos' : 'ibadan';
+
     // create registration (with atomic capacity check inside)
     const registration = await createEventRegistration({
       event_id: event_id.toString().trim(),

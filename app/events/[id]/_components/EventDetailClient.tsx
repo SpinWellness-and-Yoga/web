@@ -35,13 +35,24 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
   const [shareUrl, setShareUrl] = useState<string>('');
   const [copied, setCopied] = useState(false);
   
+  const getEventLocation = useCallback(() => {
+    const locationLower = (event?.location ?? '').trim().toLowerCase();
+    if (locationLower.includes('lagos')) return 'lagos';
+    if (locationLower.includes('ibadan')) return 'ibadan';
+    if (eventId.includes('lagos')) return 'lagos';
+    if (eventId.includes('ibadan')) return 'ibadan';
+    return '';
+  }, [event, eventId]);
+
+  const eventLocation = getEventLocation();
+
   const [formData, setFormData] = useState<RegistrationForm>({
     name: '',
     gender: '',
     profession: '',
     phone_number: '',
     email: '',
-    location_preference: eventId.includes('lagos') ? 'lagos' : eventId.includes('ibadan') ? 'ibadan' : '',
+    location_preference: eventLocation,
     needs_directions: false,
     notes: '',
   });
@@ -171,18 +182,22 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
       return;
     }
 
+    // ensure location_preference matches the event location
+    const registrationData = {
+      ...formData,
+      location_preference: eventLocation,
+      event_id: eventId,
+      needs_directions: formData.needs_directions ? 1 : 0,
+      terms_accepted: termsAccepted,
+    };
+
     try {
       const response = await fetch('/api/events/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          event_id: eventId,
-          needs_directions: formData.needs_directions ? 1 : 0,
-          terms_accepted: termsAccepted,
-        }),
+        body: JSON.stringify(registrationData),
       });
 
       if (response.ok) {
@@ -200,7 +215,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
           profession: '',
           phone_number: '',
           email: '',
-          location_preference: eventId.includes('lagos') ? 'lagos' : eventId.includes('ibadan') ? 'ibadan' : '',
+          location_preference: eventLocation,
           needs_directions: false,
           notes: '',
         });
@@ -818,35 +833,28 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
 
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', color: '#151B47', fontWeight: '600', fontSize: '1rem' }}>
-                  location preference *
+                  location *
                 </label>
-                <select
-                  required
-                  value={formData.location_preference}
-                  onChange={(e) => setFormData({ ...formData, location_preference: e.target.value })}
+                <div
                   style={{
                     width: '100%',
                     padding: '1rem',
                     border: '1px solid #DFD9D4',
                     borderRadius: '8px',
                     fontSize: '1rem',
-                    transition: 'all 0.3s ease',
-                    backgroundColor: '#fff',
+                    backgroundColor: '#f8f8f8',
                     boxSizing: 'border-box',
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#f16f64';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(241, 111, 100, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#DFD9D4';
-                    e.target.style.boxShadow = 'none';
+                    color: '#151B47',
+                    fontWeight: '500',
                   }}
                 >
-                  <option value="">select location</option>
-                  <option value="lagos">lagos</option>
-                  <option value="ibadan">ibadan</option>
-                </select>
+                  {capitalizeWords(eventLocation)}
+                </div>
+                <input
+                  type="hidden"
+                  name="location_preference"
+                  value={eventLocation}
+                />
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>

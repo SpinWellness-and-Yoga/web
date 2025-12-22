@@ -7,7 +7,9 @@
     "build": "next build",
     "build:cf": "opennextjs-cloudflare build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "export:registrations": "tsx scripts/export-event-registrations.ts",
+    "delete:registration": "tsx scripts/delete-registration.ts"
   },
   "dependencies": {
     "@getbrevo/brevo": "^2.2.0",
@@ -23,8 +25,10 @@
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/parser": "^8.46.3",
+    "dotenv": "^17.2.3",
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.0.1",
+    "tsx": "^4.20.6",
     "typescript": "^5.5.0"
   }
 }
