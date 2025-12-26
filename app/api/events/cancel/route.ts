@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '../../../../lib/logger';
 import { cacheDel } from '../../../../lib/cache';
@@ -58,12 +59,12 @@ export async function POST(request: Request) {
 
     if (ticket_number) {
       const normalizedTicket = ticket_number.trim().toUpperCase();
-      
+
       const { data, error: fetchError } = await supabase
-        .from('event_registrations')
+      .from('event_registrations')
         .select('id, event_id, name, email, status, ticket_number')
-        .eq('ticket_number', normalizedTicket)
-        .single();
+      .eq('ticket_number', normalizedTicket)
+      .single();
 
       if (fetchError || !data) {
         logger.warn('ticket not found');
@@ -152,6 +153,9 @@ export async function POST(request: Request) {
       `event:${registration.event_id}:with-count`,
       'events:all:with-counts',
     ]);
+
+    revalidatePath('/events');
+    revalidatePath(`/events/${registration.event_id}`);
 
     const duration = Date.now() - startTime;
     logger.info('ticket cancelled successfully', { 

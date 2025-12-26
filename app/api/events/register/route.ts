@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createEventRegistration, checkDuplicateRegistration, getEventById } from '../../../../lib/events-storage';
 import { sendEventRegistrationNotification, sendEventRegistrationConfirmation } from '../../../../lib/email';
 import { getEventAddress, getEventLocationLabel } from '../../../../lib/utils';
@@ -202,6 +203,9 @@ export async function POST(request: Request) {
         logger.info('email send completed', { total: settled.length, duration_ms: durationMs });
       }
     }
+
+    revalidatePath('/events');
+    revalidatePath(`/events/${event_id}`);
 
     const responseData = { success: true, registration };
     

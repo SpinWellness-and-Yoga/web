@@ -1,7 +1,7 @@
 import * as brevo from '@getbrevo/brevo';
 import { logger } from './logger';
 import { EMAIL_CONFIG } from './constants';
-import { redisDel, redisGet, redisSet, redisSetNx } from './redis';
+import { redisDel, redisGet, redisSet, redisSetNx, getRedis } from './redis';
 import { capitalizeWords, generateEventSlug } from './utils';
 
 function safeBrevoMeta(result: any): Record<string, any> {
@@ -107,36 +107,49 @@ async function sendEmailWithRetry(
   const sentKey = dedupeKeyRaw ? `${dedupeKeyRaw}:sent` : '';
 
   if (!skipDedupe) {
-    if (sentKey) {
-      const alreadySent = await redisGet(sentKey);
-      if (alreadySent) {
-        logger.info('email deduped (already sent)');
-        return;
-      }
-      const memSent = dedupeMap.get(sentKey);
-      if (memSent && now < memSent) {
-        logger.info('email deduped (already sent)');
-        return;
-      }
+  if (sentKey) {
+    const alreadySent = await redisGet(sentKey);
+    if (alreadySent) {
+      logger.info('email deduped (already sent)');
+      return;
+    }
+    const memSent = dedupeMap.get(sentKey);
+    if (memSent && now < memSent) {
+      logger.info('email deduped (already sent)');
+      return;
+    }
+  }
+
+  if (pendingKey) {
+    const pending = await redisGet(pendingKey);
+    if (pending) {
+      logger.info('email deduped (pending)');
+      return;
+    }
+    const memPending = dedupeMap.get(pendingKey);
+    if (memPending && now < memPending) {
+      logger.info('email deduped (pending)');
+      return;
     }
 
-    if (pendingKey) {
-      const pending = await redisGet(pendingKey);
-      if (pending) {
-        logger.info('email deduped (pending)');
-        return;
-      }
-      const memPending = dedupeMap.get(pendingKey);
-      if (memPending && now < memPending) {
-        logger.info('email deduped (pending)');
-        return;
-      }
-
-      const locked = await redisSetNx(pendingKey, '1', pendingTtlSeconds);
-      if (!locked) {
-        dedupeMap.set(pendingKey, now + pendingTtlSeconds * 1000);
-        logger.info('email deduped (pending lock failed)');
-        return;
+    const locked = await redisSetNx(pendingKey, '1', pendingTtlSeconds);
+    if (!locked) {
+        const redisAvailable = await (async () => {
+          try {
+            const c = await getRedis();
+            return c !== null;
+          } catch {
+            return false;
+          }
+        })();
+        
+        if (redisAvailable) {
+          dedupeMap.set(pendingKey, now + pendingTtlSeconds * 1000);
+          logger.info('email deduped (pending lock failed)');
+          return;
+        }
+        
+      dedupeMap.set(pendingKey, now + pendingTtlSeconds * 1000);
       }
     }
   }
@@ -158,10 +171,10 @@ async function sendEmailWithRetry(
       if (result?.response?.statusCode >= 200 && result?.response?.statusCode < 300) {
         logger.info(`${emailType} email sent successfully`);
         try {
-          if (pendingKey) await redisDel([pendingKey]);
+        if (pendingKey) await redisDel([pendingKey]);
           if (sentKey && !skipDedupe) {
-            await redisSet(sentKey, '1', sentTtlSeconds);
-            dedupeMap.set(sentKey, Date.now() + sentTtlSeconds * 1000);
+          await redisSet(sentKey, '1', sentTtlSeconds);
+          dedupeMap.set(sentKey, Date.now() + sentTtlSeconds * 1000);
           }
         } catch (cacheError) {
           logger.warn('failed to update cache after email send', { error: cacheError, email_type: emailType });
@@ -189,7 +202,7 @@ async function sendEmailWithRetry(
   }
 
   try {
-    if (pendingKey) await redisDel([pendingKey]);
+  if (pendingKey) await redisDel([pendingKey]);
   } catch (cleanupError) {
     logger.warn('failed to cleanup pending key after email failure', { error: cleanupError, email_type: emailType });
   }
@@ -638,16 +651,16 @@ export async function sendEventReminder(entry: {
         <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Date:</strong> ${escapeHtml(entry.event_date)}</p>
         <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.event_location)}</p>
         ${address ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Address:</strong> <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #ffffff; text-decoration: underline;">${escapeHtml(address)}</a></p>` : ''}
-        <p style="color: rgba(255, 255, 255, 0.9); margin: 12px 0 0; font-size: 13px;"><a href="${faqUrl}" style="color: #ffffff; text-decoration: underline;">View FAQs for this event</a></p>
+        <p style="color: rgba(255, 255, 255, 0.9); margin: 12px 0 0; font-size: 13px;"><a href="${faqUrl}" style="color: #ffffff; text-decoration: underline;">view faqs for this event</a></p>
       </div>
       
       <div style="text-align: center; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-        <p style="color: #666; font-size: 14px; margin: 0 0 8px;">Best regards,<br>The Spin Wellness Team</p>
+        <p style="color: #666; font-size: 14px; margin: 0 0 8px;">Best regards,<br>The Spinwellness & Yoga Team</p>
         <p style="color: #999; font-size: 12px; margin: 0;"><a href="${unsubscribeUrl}" style="color: #999; text-decoration: underline;">Unsubscribe</a></p>
       </div>
     </div>
   `;
-  
+
   const textVersion = `Hi ${entry.name},
 
 We are just three days away from our "${entry.event_name}" event and we couldn't be more excited!
@@ -667,25 +680,25 @@ Date: ${entry.event_date}
 Location: ${entry.event_location}
 ${address ? `Address: ${address} (${mapsUrl})` : ''}
 
-View FAQs: ${faqUrl}
+view faqs: ${faqUrl}
 
 Best regards,
-The Spin Wellness Team`;
+The Spinwellness & Yoga Team`;
 
-  const sendSmtpEmail = new brevo.SendSmtpEmail();
-  sendSmtpEmail.sender = { name: 'Spin Wellness', email: senderEmail };
-  sendSmtpEmail.to = [{ email: entry.email }];
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = { name: 'Spinwellness & Yoga', email: senderEmail };
+    sendSmtpEmail.to = [{ email: entry.email }];
   sendSmtpEmail.subject = `Event Reminder: ${capitalizeWords(entry.event_name)} - ${entry.event_date}`;
-  sendSmtpEmail.htmlContent = emailBody;
+    sendSmtpEmail.htmlContent = emailBody;
   sendSmtpEmail.textContent = textVersion;
   
   sendSmtpEmail.headers = {
     'List-Unsubscribe': `<${unsubscribeUrl}>`,
     'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-    'X-Mailer': 'Spin Wellness',
+    'X-Mailer': 'Spinwellness & Yoga',
   };
   
-  sendSmtpEmail.replyTo = { email: senderEmail, name: 'Spin Wellness' };
+  sendSmtpEmail.replyTo = { email: senderEmail, name: 'Spinwellness & Yoga' };
 
   await sendEmailWithRetry(apiInstance, sendSmtpEmail, 'event-reminder', skipDedupe);
 }

@@ -7,8 +7,11 @@ let client: RedisClient | null = null;
 let connecting: Promise<RedisClient> | null = null;
 let disabledUntil = 0;
 let lastErrorLogAt = 0;
+let permanentFailure = false;
 const DISABLE_MS = 30_000;
 const LOG_THROTTLE_MS = 30_000;
+const MAX_FAILURES = 3;
+let failureCount = 0;
 
 function isEnabled(): boolean {
   return process.env.REDIS_ENABLED === 'true' && !!process.env.REDIS_URL;
@@ -26,6 +29,7 @@ export function redisEnabled(): boolean {
 
 export async function getRedis(): Promise<RedisClient | null> {
   if (!isEnabled()) return null;
+  if (permanentFailure) return null;
   if (Date.now() < disabledUntil) return null;
   if (client) return client;
   if (connecting) return connecting;
@@ -46,13 +50,22 @@ export async function getRedis(): Promise<RedisClient | null> {
     });
 
     c.on('error', (err) => {
-      // reduce noise: log at most once per throttle window
+      failureCount++;
       const now = Date.now();
+      
+      if (failureCount >= MAX_FAILURES) {
+        if (!permanentFailure) {
+          permanentFailure = true;
+          logger.warn('redis permanently disabled after multiple failures', { failureCount });
+        }
+        return;
+      }
+      
       if (now - lastErrorLogAt >= LOG_THROTTLE_MS) {
         lastErrorLogAt = now;
         logger.error('redis client error', err);
       }
-      // if we are seeing connection errors, back off to avoid repeated dials
+      
       if (disabledUntil === 0 || now >= disabledUntil) {
         disabledUntil = now + DISABLE_MS;
       }
@@ -61,17 +74,26 @@ export async function getRedis(): Promise<RedisClient | null> {
     try {
       await c.connect();
       client = c;
+      failureCount = 0;
+      permanentFailure = false;
       logger.info('redis connected');
       return c;
     } catch (err) {
+      failureCount++;
       disabledUntil = Date.now() + DISABLE_MS;
+      
+      if (failureCount >= MAX_FAILURES) {
+        permanentFailure = true;
+        logger.warn('redis permanently disabled after connection failures', { failureCount });
+      } else {
+        logger.warn('redis connect failed, disabling temporarily', { disabledForMs: DISABLE_MS, failureCount });
+      }
+      
       try {
-        // disconnect is best-effort; client may be closed or never connected
         if (c && typeof c.disconnect === 'function') {
           try {
             await c.disconnect();
           } catch (disconnectErr: any) {
-            // ignore "client is closed" and other disconnect errors
             if (disconnectErr?.message?.includes('closed')) {
               // expected when connect failed before session established
             }
@@ -80,7 +102,6 @@ export async function getRedis(): Promise<RedisClient | null> {
       } catch {
         // ignore any cleanup errors
       }
-      logger.warn('redis connect failed, disabling temporarily', { disabledForMs: DISABLE_MS });
       throw err;
     } finally {
       connecting = null;
