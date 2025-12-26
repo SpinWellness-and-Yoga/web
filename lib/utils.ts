@@ -191,12 +191,19 @@ export function generateEventSlug(eventName: string, location: string): string {
     locationPart = 'ibadan';
   }
   
-  const nameSlug = nameLower
+  let nameSlug = nameLower
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
   
-  return locationPart ? `${nameSlug}-${locationPart}` : nameSlug;
+  nameSlug = nameSlug.replace(/-edition$/g, '');
+  
+  if (!locationPart) {
+    return nameSlug;
+  }
+  
+  const nameHasLocation = nameSlug.includes(`-${locationPart}`) || nameSlug.endsWith(locationPart);
+  return nameHasLocation ? nameSlug : `${nameSlug}-${locationPart}`;
 }
 

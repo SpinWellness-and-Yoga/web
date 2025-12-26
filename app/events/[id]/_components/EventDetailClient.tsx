@@ -523,8 +523,8 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                   style={{
                     color: '#F16F64',
                     textDecoration: 'underline',
-                    fontSize: '1rem',
-                    fontWeight: '500',
+                    fontSize: '1.1rem',
+                    fontWeight: '600',
                   }}
                 >
                   view faq →

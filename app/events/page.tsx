@@ -5,7 +5,8 @@ import { capitalizeWords } from '../../lib/utils';
 import { getAllEventsWithCounts } from '../../lib/events-storage';
 import EventsList from './_components/EventsList';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function EventsPage() {
   const events = await getAllEventsWithCounts();

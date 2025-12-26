@@ -154,8 +154,8 @@ export async function POST(request: Request) {
       'events:all:with-counts',
     ]);
 
-    revalidatePath('/events');
-    revalidatePath(`/events/${registration.event_id}`);
+    revalidatePath('/events', 'page');
+    revalidatePath(`/events/${registration.event_id}`, 'page');
 
     const duration = Date.now() - startTime;
     logger.info('ticket cancelled successfully', { 

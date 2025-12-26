@@ -5,7 +5,8 @@ import styles from '../../page.module.css';
 import { getEventByIdWithCount, getAllEventsWithCounts } from '../../../lib/events-storage';
 import EventDetailClient from './_components/EventDetailClient';
 
-export const revalidate = 180;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function generateStaticParams() {
   try {

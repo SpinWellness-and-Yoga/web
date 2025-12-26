@@ -651,7 +651,7 @@ export async function sendEventReminder(entry: {
         <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Date:</strong> ${escapeHtml(entry.event_date)}</p>
         <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.event_location)}</p>
         ${address ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Address:</strong> <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #ffffff; text-decoration: underline;">${escapeHtml(address)}</a></p>` : ''}
-        <p style="color: rgba(255, 255, 255, 0.9); margin: 12px 0 0; font-size: 13px;"><a href="${faqUrl}" style="color: #ffffff; text-decoration: underline;">view faqs for this event</a></p>
+        <p style="color: rgba(255, 255, 255, 0.95); margin: 16px 0 0; font-size: 15px; font-weight: 500;"><a href="${faqUrl}" style="color: #ffffff; text-decoration: underline; font-weight: 500;">view faqs for this event</a></p>
       </div>
       
       <div style="text-align: center; padding-top: 20px; border-top: 1px solid #e0e0e0;">

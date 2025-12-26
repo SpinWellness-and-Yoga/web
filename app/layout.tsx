@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { Viewport } from "next";
 import { Raleway, Quando } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const raleway = Raleway({
@@ -57,7 +59,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${raleway.variable} ${quando.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+        <SpeedInsights />
+      </body>
     </html>
   );
 }

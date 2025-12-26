@@ -15,7 +15,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: 'what should i wear?',
-    answer: 'wear comfortable, breathable clothing that allows you to move freely (leggings, joggers, or loose athletic wear).',
+    answer: 'wear comfortable, breathable clothing that allows you to move freely (leggings, joggers, or athletic wear).',
   },
   {
     question: 'do i need to bring anything along?',

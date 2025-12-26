@@ -204,10 +204,10 @@ export async function POST(request: Request) {
       }
     }
 
-    revalidatePath('/events');
-    revalidatePath(`/events/${event_id}`);
-
     const responseData = { success: true, registration };
+    
+    revalidatePath('/events', 'page');
+    revalidatePath(`/events/${event_id}`, 'page');
     
     idempotencyStore.set(idempotencyKey, {
       response: responseData,
