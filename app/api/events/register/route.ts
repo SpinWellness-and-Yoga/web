@@ -21,10 +21,8 @@ function getEnvFromRequest(request: Request): any {
   return undefined;
 }
 
-// idempotency store for duplicate request prevention
 const idempotencyStore = new Map<string, { response: any; expiresAt: number }>();
 
-// cleanup expired idempotency keys every 10 minutes
 setInterval(() => {
   const now = Date.now();
   for (const [key, value] of idempotencyStore.entries()) {
@@ -40,7 +38,6 @@ export async function POST(request: Request) {
   let sanitizedEmail = '';
 
   try {
-    // parse request body with size limit check
     const contentLength = request.headers.get('content-length');
     if (contentLength && parseInt(contentLength) > 10000) {
       logger.warn('request body too large', { contentLength });
@@ -55,7 +52,6 @@ export async function POST(request: Request) {
     
     const { event_id, name, gender, profession, phone_number, email, location_preference, needs_directions, notes } = body;
 
-    // basic required field check
     if (!event_id || !name || !gender || !profession || !phone_number || !email || !location_preference) {
       return NextResponse.json(
         { error: 'missing required fields' },
@@ -63,7 +59,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // sanitize and validate input
     const sanitizedInput = sanitizeRegistrationInput({
       name,
       email,
@@ -86,7 +81,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // rate limiting
     clientIp = getClientIp(request);
     const rateLimitCheck = checkRegistrationRateLimit(clientIp, sanitizedEmail);
     if (!rateLimitCheck.allowed) {
@@ -97,7 +91,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // idempotency check
     const idempotencyKey = generateIdempotencyKey(event_id, sanitizedEmail);
     const existingResponse = idempotencyStore.get(idempotencyKey);
     if (existingResponse && Date.now() < existingResponse.expiresAt) {
@@ -105,7 +98,6 @@ export async function POST(request: Request) {
       return NextResponse.json(existingResponse.response, { status: 201 });
     }
 
-    // check for duplicate registration
     const isDuplicate = await checkDuplicateRegistration(event_id, sanitizedEmail, request);
     if (isDuplicate) {
       logger.info('duplicate registration detected');
@@ -115,7 +107,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // verify event exists
     const event = await getEventById(event_id, request);
     if (!event) {
       logger.warn('event not found', { eventId: event_id });
@@ -125,7 +116,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // ensure location matches event
     const eventLoc = event.location?.toLowerCase() || '';
     const isLagos = eventLoc.includes('lagos') || event_id.includes('lagos');
     const isIbadan = eventLoc.includes('ibadan') || event_id.includes('ibadan');
@@ -140,7 +130,6 @@ export async function POST(request: Request) {
     
     sanitizedInput.location_preference = isLagos ? 'lagos' : 'ibadan';
 
-    // create registration (with atomic capacity check inside)
     const registration = await createEventRegistration({
       event_id: event_id.toString().trim(),
       name: sanitizedInput.name,
@@ -163,8 +152,6 @@ export async function POST(request: Request) {
     const eventTime = '4:30 PM WAT';
     const eventDate = `${eventDateOnly} at ${eventTime}`;
 
-    // send emails before returning to avoid serverless freezing background tasks.
-    // keep logs high-signal and avoid logging sensitive data.
     const emailStart = Date.now();
     logger.info('starting email send', { event_id: String(event_id).trim() });
 
@@ -218,7 +205,6 @@ export async function POST(request: Request) {
 
     const responseData = { success: true, registration };
     
-    // store in idempotency cache for 5 minutes
     idempotencyStore.set(idempotencyKey, {
       response: responseData,
       expiresAt: Date.now() + 300000,
@@ -232,7 +218,6 @@ export async function POST(request: Request) {
     const duration = Date.now() - startTime;
     logger.error(`registration failed (${duration}ms)`, error);
 
-    // check for specific error messages
     const errorMessage = error instanceof Error ? error.message : '';
     if (errorMessage.includes('at capacity')) {
       return NextResponse.json(

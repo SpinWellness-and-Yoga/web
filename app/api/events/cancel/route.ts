@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '../../../../lib/logger';
+import { cacheDel } from '../../../../lib/cache';
 
 function getSupabaseClient(request?: Request) {
   const req = request as any;
@@ -17,32 +18,88 @@ function getSupabaseClient(request?: Request) {
 }
 
 export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { ticket_number } = body;
+  const startTime = Date.now();
+  
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > 2000) {
+    logger.warn('request body too large for cancel');
+    return NextResponse.json(
+      { error: 'request too large' },
+      { status: 413 }
+    );
+  }
 
-    if (!ticket_number || typeof ticket_number !== 'string') {
+  try {
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      logger.warn('invalid json in cancel request');
       return NextResponse.json(
-        { error: 'ticket number is required' },
+        { error: 'invalid request format' },
         { status: 400 }
       );
     }
 
-    const normalizedTicket = ticket_number.trim().toUpperCase();
+    const { ticket_number, email } = body;
+
+
+    if ((!ticket_number || typeof ticket_number !== 'string' || ticket_number.length > 50) && 
+        (!email || typeof email !== 'string' || email.length > 255)) {
+      logger.warn('cancel ticket: invalid parameters');
+      return NextResponse.json(
+        { error: 'invalid request parameters' },
+        { status: 400 }
+      );
+    }
 
     const supabase = getSupabaseClient(request);
+    let registration = null;
 
-    // check if ticket exists and is active
-    const { data: registration, error: fetchError } = await supabase
-      .from('event_registrations')
-      .select('id, event_id, name, email, status')
-      .eq('ticket_number', normalizedTicket)
-      .single();
+    if (ticket_number) {
+      const normalizedTicket = ticket_number.trim().toUpperCase();
+      
+      const { data, error: fetchError } = await supabase
+        .from('event_registrations')
+        .select('id, event_id, name, email, status, ticket_number')
+        .eq('ticket_number', normalizedTicket)
+        .single();
 
-    if (fetchError || !registration) {
-      logger.warn('ticket not found for cancellation');
+      if (fetchError || !data) {
+        logger.warn('ticket not found');
+        return NextResponse.json(
+          { error: 'ticket not found' },
+          { status: 404 }
+        );
+      }
+
+      registration = data;
+    } else if (email) {
+      const normalizedEmail = email.trim().toLowerCase();
+      
+      const { data, error: fetchError } = await supabase
+        .from('event_registrations')
+        .select('id, event_id, name, email, status, ticket_number')
+        .eq('email', normalizedEmail)
+        .eq('status', 'confirmed')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (fetchError || !data) {
+        logger.warn('registration not found');
+        return NextResponse.json(
+          { error: 'registration not found' },
+          { status: 404 }
+        );
+      }
+
+      registration = data;
+    }
+
+    if (!registration) {
       return NextResponse.json(
-        { error: 'ticket not found' },
+        { error: 'registration not found' },
         { status: 404 }
       );
     }
@@ -54,30 +111,65 @@ export async function POST(request: Request) {
       );
     }
 
-    // cancel the ticket
-    const { error: updateError } = await supabase
+    const { data: deleteData, error: deleteError } = await supabase
       .from('event_registrations')
-      .update({ status: 'cancelled' })
-      .eq('ticket_number', normalizedTicket);
+      .delete()
+      .eq('id', registration.id)
+      .select();
 
-    if (updateError) {
-      logger.error('failed to cancel ticket', updateError);
+    if (deleteError) {
+      logger.error('delete operation failed');
       return NextResponse.json(
         { error: 'failed to cancel ticket' },
         { status: 500 }
       );
     }
 
-    logger.info('ticket cancelled successfully');
+    const deletedRows = deleteData?.length || 0;
+    if (deletedRows === 0) {
+      logger.error('delete operation returned no deleted rows');
+      return NextResponse.json(
+        { error: 'failed to cancel ticket' },
+        { status: 500 }
+      );
+    }
+
+    const { data: verifyData } = await supabase
+      .from('event_registrations')
+      .select('id')
+      .eq('id', registration.id)
+      .maybeSingle();
+
+    if (verifyData) {
+      logger.error('verification failed: registration still exists after delete');
+      return NextResponse.json(
+        { error: 'failed to cancel ticket' },
+        { status: 500 }
+      );
+    }
+
+    await cacheDel([
+      `event:${registration.event_id}:with-count`,
+      'events:all:with-counts',
+    ]);
+
+    const duration = Date.now() - startTime;
+    logger.info('ticket cancelled successfully', { 
+      deleted_rows: deletedRows,
+      duration_ms: duration,
+    });
 
     return NextResponse.json({
       success: true,
-      message: 'ticket cancelled successfully',
+      message: 'ticket cancelled successfully. your spot has been released.',
     });
   } catch (error) {
-    logger.error('exception cancelling ticket', error);
+    const duration = Date.now() - startTime;
+    logger.error('exception cancelling ticket', {
+      duration_ms: duration,
+    });
     return NextResponse.json(
-      { error: 'failed to cancel ticket' },
+      { error: 'internal server error' },
       { status: 500 }
     );
   }

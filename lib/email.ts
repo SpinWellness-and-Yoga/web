@@ -2,6 +2,7 @@ import * as brevo from '@getbrevo/brevo';
 import { logger } from './logger';
 import { EMAIL_CONFIG } from './constants';
 import { redisDel, redisGet, redisSet, redisSetNx } from './redis';
+import { capitalizeWords, generateEventSlug } from './utils';
 
 function safeBrevoMeta(result: any): Record<string, any> {
   const statusCode = result?.response?.statusCode;
@@ -35,17 +36,14 @@ function safeBrevoErrorMeta(error: any): Record<string, any> {
 }
 
 function getEnvVar(key: string, env?: any): string | undefined {
-  // check passed env first (for cloudflare workers)
   if (env?.[key]) return env[key];
   if (env?.env?.[key]) return env.env[key];
   if (env?.vars?.[key]) return env.vars[key];
   
-  // check process.env (for next.js)
   if (process.env[key]) {
     return process.env[key];
   }
   
-  // check global env (for cloudflare)
   if (typeof globalThis !== 'undefined') {
     const g = globalThis as any;
     if (g.env?.[key]) return g.env[key];
@@ -84,10 +82,9 @@ function getBrevoClient(env?: any): brevo.TransactionalEmailsApi | null {
 async function sendEmailWithRetry(
   apiInstance: brevo.TransactionalEmailsApi,
   payload: brevo.SendSmtpEmail,
-  emailType: string
+  emailType: string,
+  skipDedupe: boolean = false
 ): Promise<void> {
-  // prevent duplicate deliveries when the provider responds with transient 5xx/timeouts.
-  // if we can't be sure the first attempt didn't send, we avoid retrying and dedupe subsequent calls by key.
   const dedupeKeyRaw = (() => {
     const toEmail = payload.to?.[0]?.email?.trim().toLowerCase();
     const subject = payload.subject?.trim();
@@ -109,35 +106,38 @@ async function sendEmailWithRetry(
   const pendingKey = dedupeKeyRaw ? `${dedupeKeyRaw}:pending` : '';
   const sentKey = dedupeKeyRaw ? `${dedupeKeyRaw}:sent` : '';
 
-  if (sentKey) {
-    const alreadySent = await redisGet(sentKey);
-    if (alreadySent) {
-      logger.info('email deduped (already sent)');
-      return;
-    }
-    const memSent = dedupeMap.get(sentKey);
-    if (memSent && now < memSent) {
-      logger.info('email deduped (already sent)');
-      return;
-    }
-  }
-
-  if (pendingKey) {
-    const pending = await redisGet(pendingKey);
-    if (pending) {
-      logger.info('email deduped (pending)');
-      return;
-    }
-    const memPending = dedupeMap.get(pendingKey);
-    if (memPending && now < memPending) {
-      logger.info('email deduped (pending)');
-      return;
+  if (!skipDedupe) {
+    if (sentKey) {
+      const alreadySent = await redisGet(sentKey);
+      if (alreadySent) {
+        logger.info('email deduped (already sent)');
+        return;
+      }
+      const memSent = dedupeMap.get(sentKey);
+      if (memSent && now < memSent) {
+        logger.info('email deduped (already sent)');
+        return;
+      }
     }
 
-    const locked = await redisSetNx(pendingKey, '1', pendingTtlSeconds);
-    if (!locked) {
-      // if redis is disabled/unavailable, fall back to a short in-memory lock.
-      dedupeMap.set(pendingKey, now + pendingTtlSeconds * 1000);
+    if (pendingKey) {
+      const pending = await redisGet(pendingKey);
+      if (pending) {
+        logger.info('email deduped (pending)');
+        return;
+      }
+      const memPending = dedupeMap.get(pendingKey);
+      if (memPending && now < memPending) {
+        logger.info('email deduped (pending)');
+        return;
+      }
+
+      const locked = await redisSetNx(pendingKey, '1', pendingTtlSeconds);
+      if (!locked) {
+        dedupeMap.set(pendingKey, now + pendingTtlSeconds * 1000);
+        logger.info('email deduped (pending lock failed)');
+        return;
+      }
     }
   }
 
@@ -157,10 +157,14 @@ async function sendEmailWithRetry(
       
       if (result?.response?.statusCode >= 200 && result?.response?.statusCode < 300) {
         logger.info(`${emailType} email sent successfully`);
-        if (pendingKey) await redisDel([pendingKey]);
-        if (sentKey) {
-          await redisSet(sentKey, '1', sentTtlSeconds);
-          dedupeMap.set(sentKey, Date.now() + sentTtlSeconds * 1000);
+        try {
+          if (pendingKey) await redisDel([pendingKey]);
+          if (sentKey && !skipDedupe) {
+            await redisSet(sentKey, '1', sentTtlSeconds);
+            dedupeMap.set(sentKey, Date.now() + sentTtlSeconds * 1000);
+          }
+        } catch (cacheError) {
+          logger.warn('failed to update cache after email send', { error: cacheError, email_type: emailType });
         }
         return;
       }
@@ -170,11 +174,9 @@ async function sendEmailWithRetry(
       lastError = error instanceof Error ? error : new Error(String(error));
       logger.warn('brevo send failed', { email_type: emailType, attempt, ...safeBrevoErrorMeta(error) });
 
-      // if the request timed out, we can't know whether the provider will still deliver.
-      // to avoid duplicates, stop retrying and keep a short "pending" lock.
       if (lastError.message.includes('timeout')) {
         logger.warn(`${emailType} email timed out, skipping retry to prevent duplicates`);
-        return;
+        throw new Error(`email send timed out after ${attempt} attempt(s)`);
       }
       
       if (attempt < EMAIL_CONFIG.RETRY_ATTEMPTS) {
@@ -186,8 +188,16 @@ async function sendEmailWithRetry(
     }
   }
 
-  // if we failed definitively, clear the pending lock so a future attempt can try again.
-  if (pendingKey) await redisDel([pendingKey]);
+  try {
+    if (pendingKey) await redisDel([pendingKey]);
+  } catch (cleanupError) {
+    logger.warn('failed to cleanup pending key after email failure', { error: cleanupError, email_type: emailType });
+  }
+  
+  if (lastError) {
+    logger.error(`${emailType} email failed after all retries`, { error: lastError });
+    throw lastError;
+  }
 }
 
 export function renderEventRegistrationConfirmationEmail(entry: {
@@ -578,79 +588,104 @@ export async function sendEventReminder(entry: {
   event_name: string;
   event_date: string;
   event_location: string;
+  event_address?: string;
   name: string;
   email: string;
   ticket_number: string;
   location_preference: string;
-}, env?: any): Promise<void> {
+}, env?: any, skipDedupe: boolean = false): Promise<void> {
   const apiInstance = getBrevoClient(env);
 
   if (!apiInstance) {
+    const error = new Error('brevo api key not found - cannot send email');
     logger.error('event reminder: brevo api key not found');
-    return;
+    throw error;
   }
 
-  const logoUrl = 'https://www.spinwellnessandyoga.com/logos/SWAY-logomark-PNG.png';
-
-  const escapeHtml = (text: string) => {
-    const map: { [key: string]: string } = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;',
-    };
-    return text.replace(/[&<>"']/g, (m) => map[m]);
-  };
+  const siteBaseUrl = 'https://www.spinwellnessandyoga.com';
+  const cancelUrl = `${siteBaseUrl}/cancel?ticket=${encodeURIComponent(entry.ticket_number)}&email=${encodeURIComponent(entry.email)}`;
+  const unsubscribeUrl = `${siteBaseUrl}/cancel?email=${encodeURIComponent(entry.email)}`;
+  const senderEmail = getEnvVar('BREVO_SENDER_EMAIL', env) || 'admin@spinwellnessandyoga.com';
+  
+  const eventSlug = generateEventSlug(entry.event_name, entry.event_location);
+  const faqUrl = `${siteBaseUrl}/faqs/events/${eventSlug}`;
+  
+  const address = entry.event_address?.trim() || '';
+  const mapsUrl = address
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
+    : '';
 
   const emailBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #151b47; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="text-align: center; margin-bottom: 18px;">
-        <img src="${logoUrl}" alt="Spinwellness & Yoga" style="width: 260px; max-width: 260px; height: auto; display: block; margin: 0 auto 8px; border: 0; outline: none; text-decoration: none;" />
-        <h1 style="color: #151b47; font-size: 28px; margin: 0 0 10px;">Event Reminder</h1>
-      </div>
-      
-      <div style="background: linear-gradient(135deg, #f16f64 0%, #e85a50 100%); padding: 30px; border-radius: 12px; margin-bottom: 30px; color: white; text-align: center;">
-        <h2 style="color: white; margin: 0 0 15px; font-size: 24px;">${escapeHtml(entry.event_name)}</h2>
-        <p style="color: rgba(255, 255, 255, 0.95); margin: 5px 0; font-size: 16px;"><strong>Date:</strong> ${escapeHtml(entry.event_date)}</p>
-        <p style="color: rgba(255, 255, 255, 0.95); margin: 5px 0; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.event_location)}</p>
-      </div>
-      
       <div style="background: #fef9f5; padding: 30px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #f16f64;">
         <p style="margin: 0 0 15px; font-size: 16px;">Hi ${escapeHtml(entry.name)},</p>
-        <p style="margin: 0 0 15px; font-size: 16px;">This is a friendly reminder that <strong>${escapeHtml(entry.event_name)}</strong> is happening in 2 days!</p>
+        <p style="margin: 0 0 15px; font-size: 16px;">We are just three days away from our <strong>"${escapeHtml(entry.event_name)}"</strong> event and we couldn't be more excited!</p>
+        <p style="margin: 0 0 15px; font-size: 16px;">As we finalize our preparations, we want to do a quick check-in with you: <strong>Are you still able to join us?</strong></p>
+        
         <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #f16f64;">
-          <p style="margin: 0 0 10px; font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 1px;">Your Ticket Number</p>
-          <p style="margin: 0; font-size: 24px; font-weight: bold; color: #f16f64; letter-spacing: 2px;">${escapeHtml(entry.ticket_number)}</p>
+          <ul style="margin: 0; padding-left: 20px; color: #322216; font-size: 16px; line-height: 1.8;">
+            <li style="margin-bottom: 10px;"><strong>If YES:</strong> You don't need to do a thing. We've got your mat and your goody bag ready. We can't wait to see you.</li>
+            <li style="margin-bottom: 10px;"><strong>If NO:</strong> We'll miss you, but we completely understand that life happens. If you can no longer make it, please <a href="${cancelUrl}" style="color: #f16f64; text-decoration: underline;">unregister here</a> so we can release your ticket.</li>
+          </ul>
         </div>
-        <p style="margin: 15px 0; font-size: 16px;">Please remember to bring your ticket number with you. We can&apos;t wait to see you there!</p>
-        ${entry.location_preference ? `<p style="margin: 0 0 15px; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.location_preference)}</p>` : ''}
+        
+        <p style="margin: 15px 0; font-size: 16px; color: #322216;">Every one of our 20 spots is incredibly precious. By releasing your ticket now, you're allowing someone else join the session and commit to their wellness journey.</p>
+        <p style="margin: 15px 0 0; font-size: 16px; color: #322216;">Thank you for being so thoughtful.</p>
       </div>
 
-      <div style="background: #fff9f5; padding: 24px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #f16f64;">
-        <p style="margin: 0 0 12px; font-size: 15px; color: #322216;"><strong>can&apos;t make it?</strong></p>
-        <p style="margin: 0 0 16px; font-size: 14px; color: #666; line-height: 1.6;">if you&apos;re unable to attend, please cancel your ticket so someone else can take your spot.</p>
-        <a href="https://spinwellnessandyoga.com/cancel" style="display: inline-block; padding: 10px 20px; background: #ffffff; color: #f16f64; text-decoration: none; border: 2px solid #f16f64; border-radius: 8px; font-weight: 600; font-size: 14px;">cancel ticket</a>
+      <div style="background: linear-gradient(135deg, #f16f64 0%, #e85a50 100%); padding: 26px; border-radius: 12px; margin-bottom: 30px; color: white; text-align: left;">
+        <h2 style="color: white; margin: 0 0 14px; font-size: 20px;">Event Details</h2>
+        <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Date:</strong> ${escapeHtml(entry.event_date)}</p>
+        <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.event_location)}</p>
+        ${address ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Address:</strong> <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #ffffff; text-decoration: underline;">${escapeHtml(address)}</a></p>` : ''}
+        <p style="color: rgba(255, 255, 255, 0.9); margin: 12px 0 0; font-size: 13px;"><a href="${faqUrl}" style="color: #ffffff; text-decoration: underline;">View FAQs for this event</a></p>
       </div>
       
       <div style="text-align: center; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-        <p style="color: #666; font-size: 14px; margin: 0;">Spinwellness & Yoga | Transform Employee Wellness</p>
+        <p style="color: #666; font-size: 14px; margin: 0 0 8px;">Best regards,<br>The Spin Wellness Team</p>
+        <p style="color: #999; font-size: 12px; margin: 0;"><a href="${unsubscribeUrl}" style="color: #999; text-decoration: underline;">Unsubscribe</a></p>
       </div>
     </div>
   `;
-
-  const senderEmail = getEnvVar('BREVO_SENDER_EMAIL', env) || 'admin@spinwellnessandyoga.com';
   
-  try {
-    const sendSmtpEmail = new brevo.SendSmtpEmail();
-    sendSmtpEmail.sender = { name: 'Spinwellness & Yoga', email: senderEmail };
-    sendSmtpEmail.to = [{ email: entry.email }];
-    sendSmtpEmail.subject = `Reminder: ${entry.event_name} is in 2 days!`;
-    sendSmtpEmail.htmlContent = emailBody;
+  const textVersion = `Hi ${entry.name},
 
-    await apiInstance.sendTransacEmail(sendSmtpEmail);
-    logger.info('event reminder email sent successfully');
-  } catch (error) {
-    logger.error('event reminder email failed');
-  }
+We are just three days away from our "${entry.event_name}" event and we couldn't be more excited!
+
+As we finalize our preparations, we want to do a quick check-in with you: Are you still able to join us?
+
+If YES: You don't need to do a thing. We've got your mat and your goody bag ready. We can't wait to see you.
+
+If NO: We'll miss you, but we completely understand that life happens. If you can no longer make it, please unregister here: ${cancelUrl} so we can release your ticket.
+
+Every one of our 20 spots is incredibly precious. By releasing your ticket now, you're allowing someone else join the session and commit to their wellness journey.
+
+Thank you for being so thoughtful.
+
+Event Details:
+Date: ${entry.event_date}
+Location: ${entry.event_location}
+${address ? `Address: ${address} (${mapsUrl})` : ''}
+
+View FAQs: ${faqUrl}
+
+Best regards,
+The Spin Wellness Team`;
+
+  const sendSmtpEmail = new brevo.SendSmtpEmail();
+  sendSmtpEmail.sender = { name: 'Spin Wellness', email: senderEmail };
+  sendSmtpEmail.to = [{ email: entry.email }];
+  sendSmtpEmail.subject = `Event Reminder: ${capitalizeWords(entry.event_name)} - ${entry.event_date}`;
+  sendSmtpEmail.htmlContent = emailBody;
+  sendSmtpEmail.textContent = textVersion;
+  
+  sendSmtpEmail.headers = {
+    'List-Unsubscribe': `<${unsubscribeUrl}>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    'X-Mailer': 'Spin Wellness',
+  };
+  
+  sendSmtpEmail.replyTo = { email: senderEmail, name: 'Spin Wellness' };
+
+  await sendEmailWithRetry(apiInstance, sendSmtpEmail, 'event-reminder', skipDedupe);
 }

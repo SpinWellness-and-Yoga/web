@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {Event} from '../../../../lib/events-storage';
-import {capitalizeWords, formatEventDescription, getEventAddress, getEventLocationLabel, getMapsUrl} from '../../../../lib/utils';
+import {capitalizeWords, formatEventDescription, generateEventSlug, getEventAddress, getEventLocationLabel, getMapsUrl} from '../../../../lib/utils';
 import styles from '../../../page.module.css';
 
 interface RegistrationForm {
@@ -516,7 +516,20 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
         <section style={{ padding: '2rem 2rem 4rem', maxWidth: '1200px', margin: '0 auto' }}>
           <div className="event-detail-grid">
             <div>
-              <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', color: '#151B47' }}>{capitalizeWords('event details')}</h2>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <h2 style={{ fontSize: '1.8rem', margin: 0, color: '#151B47' }}>{capitalizeWords('event details')}</h2>
+                <Link
+                  href={`/faqs/events/${generateEventSlug(event.name, event.location)}`}
+                  style={{
+                    color: '#F16F64',
+                    textDecoration: 'underline',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                  }}
+                >
+                  view faq →
+                </Link>
+              </div>
               <div style={{ lineHeight: '1.8', color: '#322216' }}>
                 {formatEventDescription(event.description).map((block, index) => {
                   if (block.type === 'itinerary') {

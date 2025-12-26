@@ -180,3 +180,23 @@ export function getEventLocationLabel(location: string): string {
   return capitalizeWords((location ?? '').trim());
 }
 
+export function generateEventSlug(eventName: string, location: string): string {
+  const nameLower = (eventName ?? '').trim().toLowerCase();
+  const locationLower = (location ?? '').trim().toLowerCase();
+  
+  let locationPart = '';
+  if (locationLower.includes('lagos')) {
+    locationPart = 'lagos';
+  } else if (locationLower.includes('ibadan')) {
+    locationPart = 'ibadan';
+  }
+  
+  const nameSlug = nameLower
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  
+  return locationPart ? `${nameSlug}-${locationPart}` : nameSlug;
+}
+
