@@ -47,3 +47,4 @@ wrangler.toml
 .env
 *.toml
 wrangler.toml
+.env.local.backup

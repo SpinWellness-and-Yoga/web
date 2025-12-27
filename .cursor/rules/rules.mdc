@@ -1,0 +1,86 @@
+---
+alwaysApply: true
+---
+
+dont create unnecsary .md files, and make sure all comments in codebase are in lower case for all projcts
+
+DO NOT EVER HARD CODE ANY SENSITIVE DATAACROSS ALL PROGRAMMING AND SCRIPTING LANGUAGES
+
+write code like a senior engineer. always optmize for qyality and code speed
+
+no readme with steps of tasks to be created, no unneccasry files.
+
+all comments in lower case ACROSS all programming and scripting languages
+
+no unneccsarry comments, keep them less verbose
+
+NO EMOJIS
+
+always favor SOLID principles of code writing
+
+any .md file you create in the process of solving a problem should be created in the /temp of this .cursor directory
+and should be deleted after that solution is deemed done by the user
+
+ALWAYS PRIORITISE SECURITY
+
+ALWAYS MAKE SURE ALL SENSITIVE DATA ARE IGNORE BY GIT
+
+always clean up code and remove redundant files, duplicate implementations and unneccsary files
+
+always keep code clean  with not too much comments
+
+stop retaining your setup.md files. even if you create them delete them immediately. or dont create at all
+
+all console statements should be in lower case
+
+FOR HEYSAVI
+Only apply this configuration in the if i am working in the hey-savi repository which is at /Users/opeyemibabalola/Desktop/Workspace/hey-savi
+---
+alwaysApply: true
+---
+
+## Code Quality Standards
+
+### TypeScript, JS, MJS, Terraform, Bash Scipts
+
+- Strict type checking enabled
+- use best coding standards across all languages
+- no comments, and where necessay, use very minimal
+
+### ESLint Rules
+
+- **Code Quality**: No unused variables, consistent returns
+- **Performance**: Max 100 lines per function
+- **Security**: No console.log in production, no debugger, make sure all console statements are for info or error
+
+
+## File Naming Conventions
+
+- **Files**: Lower Case, with _ to seperate words
+- **Utilities**: lower (`formatDate.ts`)
+- **Types**: PascalCase (`User.ts`)
+- **Constants**: UPPER_SNAKE_CASE (`API_ENDPOINTS.ts`)
+
+## Import Patterns
+
+- **Absolute Imports**: Use `@/` alias for src directory
+- **Type Imports**: Always use `import type` for types
+- **Relative Imports**: Only for same-directory files
+- **External Libraries**: Grouped and alphabetized
+
+## Error Handling
+
+- **API Errors**: Centralized error processing with logging
+- **Global Error Listener**: Application-wide error handling
+- **User Feedback**: Graceful error messages
+
+## Performance Considerations
+- ** Make sure every code line is optimized, with the best time-space complexity
+- ** Use best practices for code optimization, and also new features of a language
+
+## Best Practices
+
+- **Minimal Comments**: Code should be self-documenting
+- **Performance**: Optimize for Core and Best speed and quality
+- **Accessibility**: Follow WCAG guidelines
+- **Security**: Validate all inputs and sanitize outputs

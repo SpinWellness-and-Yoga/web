@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getAllEvents, getEventRegistrations } from '../../../../lib/events-storage';
-import { sendEventReminder } from '../../../../lib/email';
-import { getEventAddress, getEventLocationLabel } from '../../../../lib/utils';
+import { getAllEvents, getEventRegistrations } from '@/lib/events-storage';
+import { sendEventReminder } from '@/lib/email';
 
 function getEnvFromRequest(request: Request): any {
   const req = request as any;
@@ -31,38 +30,43 @@ export async function GET(request: Request) {
     const env = getEnvFromRequest(request) || process.env;
     const events = await getAllEvents(request);
     
-    const threeDaysFromNow = new Date();
-    threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
-    threeDaysFromNow.setHours(0, 0, 0, 0);
+    const twoDaysFromNow = new Date();
+    twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
+    twoDaysFromNow.setHours(0, 0, 0, 0);
     
-    const threeDaysFromNowEnd = new Date(threeDaysFromNow);
-    threeDaysFromNowEnd.setHours(23, 59, 59, 999);
+    const twoDaysFromNowEnd = new Date(twoDaysFromNow);
+    twoDaysFromNowEnd.setHours(23, 59, 59, 999);
 
-    const eventsInThreeDays = events.filter(event => {
+    const eventsInTwoDays = events.filter(event => {
       const eventDate = new Date(event.start_date);
       eventDate.setHours(0, 0, 0, 0);
-      return eventDate >= threeDaysFromNow && eventDate <= threeDaysFromNowEnd;
+      return eventDate >= twoDaysFromNow && eventDate <= twoDaysFromNowEnd;
     });
+
+    console.log(`[send-reminders] Found ${eventsInTwoDays.length} events happening in 2 days`);
 
     let totalRemindersSent = 0;
     const results = [];
 
-    for (const event of eventsInThreeDays) {
+    for (const event of eventsInTwoDays) {
       const registrations = await getEventRegistrations(event.id, request);
-      const confirmedRegistrations = registrations.filter(r => r.status === 'confirmed');
+      
+      console.log(`[send-reminders] Processing event ${event.id}: ${registrations.length} registrations`);
 
-      for (const registration of confirmedRegistrations) {
+      for (const registration of registrations) {
         try {
           await sendEventReminder({
             event_name: event.name,
-            event_date: `${new Date(event.start_date).toLocaleDateString('en-US', {
+            event_date: new Date(event.start_date).toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
               month: 'long',
               day: 'numeric',
-            })} at 4:30 PM WAT`,
-            event_location: getEventLocationLabel(event.location),
-            event_address: getEventAddress(event.location),
+              hour: 'numeric',
+              minute: '2-digit',
+            }),
+            event_location: event.location,
+            event_venue: event.venue,
             name: registration.name,
             email: registration.email,
             ticket_number: registration.ticket_number,
@@ -77,6 +81,7 @@ export async function GET(request: Request) {
             status: 'sent',
           });
         } catch (error) {
+          console.error(`[send-reminders] Failed to send reminder to ${registration.email}:`, error);
           results.push({
             event_id: event.id,
             event_name: event.name,
@@ -89,11 +94,12 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      events_processed: eventsInThreeDays.length,
+      events_processed: eventsInTwoDays.length,
       reminders_sent: totalRemindersSent,
       results,
     }, { status: 200 });
   } catch (error) {
+    console.error('[send-reminders] Error:', error);
     return NextResponse.json(
       { error: 'failed to send reminders' },
       { status: 500 }

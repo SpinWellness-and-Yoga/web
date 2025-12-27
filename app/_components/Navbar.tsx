@@ -130,7 +130,7 @@ export default function Navbar({ className }: NavbarProps) {
           <Link href="/#services">Services</Link>
           <Link href="/#why">Why Us</Link>
           <Link href="/events">Events</Link>
-          <Link href="/#waitlist">Waitlist</Link>
+          <Link href="/team">Team</Link>
           <Link href="/contact">Contact</Link>
         </nav>
 
@@ -164,8 +164,8 @@ export default function Navbar({ className }: NavbarProps) {
         <Link href="/events" onClick={() => setMobileMenuOpen(false)}>
           Events
         </Link>
-        <Link href="/#waitlist" onClick={() => setMobileMenuOpen(false)}>
-          Waitlist
+        <Link href="/team" onClick={() => setMobileMenuOpen(false)}>
+          Team
         </Link>
         <Link href="/contact" onClick={() => setMobileMenuOpen(false)}>
           Contact
