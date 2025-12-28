@@ -47,7 +47,10 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         <section className={styles.hero}>
           <div className={styles.heroContent}>
             <div className={styles.heroCopy}>
-              <Link href="/events" style={{ color: '#F16F64', textDecoration: 'underline', marginBottom: '1rem', display: 'inline-block' }}>
+              <Link 
+                href="/events" 
+                style={{ color: '#F16F64', textDecoration: 'underline', marginBottom: '1rem', display: 'inline-block' }}
+              >
                 ← back to events
               </Link>
               <h1 className={styles.heroTitle}>{capitalizeWords(event.name)}</h1>
@@ -112,7 +115,20 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                   </p>
                 ))}
               </div>
-            </div>
+              <div style={{ marginTop: '2rem' }}>
+                <Link 
+                  href={`/faqs/events/${event.id}`}
+                  style={{
+                    color: '#F16F64', 
+                    textDecoration: 'underline',
+                    fontSize: '1rem',
+                    fontWeight: '600'
+                  }}
+                >
+                  {capitalizeWords('view frequently asked questions')} →
+                </Link>
+              </div>
+              </div>
 
             <EventRegistrationClient 
               eventId={event.id} 
