@@ -37,10 +37,18 @@ function escapeHtml(text: string): string {
 }
 
 function createBrevoApiInstance(apiKey: string): brevo.TransactionalEmailsApi {
-  const defaultClient = brevo.ApiClient.instance;
-  const apiKeyAuth = defaultClient.authentications['api-key'];
-  apiKeyAuth.apiKey = apiKey;
-  return new brevo.TransactionalEmailsApi();
+  const apiInstance = new brevo.TransactionalEmailsApi();
+  const instanceAny = apiInstance as any;
+  if (instanceAny.authentications) {
+    if (instanceAny.authentications['api-key']) {
+      instanceAny.authentications['api-key'].apiKey = apiKey;
+    } else {
+      instanceAny.authentications['api-key'] = { apiKey };
+    }
+  } else {
+    instanceAny.apiKey = apiKey;
+  }
+  return apiInstance;
 }
 
 async function sendEmailWithRetry(
