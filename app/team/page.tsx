@@ -15,13 +15,13 @@ const teamMembers = [
     name: 'Babalola Oluwatoyin',
     role: 'Social Media Manager',
     image: '/team-babalola-oluwatoyin.png',
-    bio: 'Oluwatoyin brings creativity and strategic vision to our social media presence, crafting content that resonates with our community and amplifies our wellness mission. With a keen eye for design and storytelling, she ensures our message reaches and inspires those seeking holistic workplace wellness solutions.',
+    bio: 'Oluwatoyin brings creativity and strategic vision to our social media presence, crafting content that resonates with our community and amplifies our wellness mission. With a keen eye for design and storytelling, she ensures our message reaches and inspires those seeking holistic workplace wellness solutions. Responsible for maintaining the organisation\'s online presence and coordinating content across its digital platforms.',
   },
   {
-    name: 'Khadijat Ibukunoluwa',
-    role: 'Executive Assistant',
+    name: 'Ibukunoluwa Junaid',
+    role: 'Assistant',
     image: '/team-ibukunoluwa-junaid-khadijat.jpg',
-    bio: 'Khadijat provides essential organizational support and ensures smooth operations across all aspects of SpinWellness & Yoga. Her attention to detail and proactive approach helps our team stay focused on delivering exceptional wellness experiences to our clients.',
+    bio: 'Khadijat provides essential organizational support and ensures smooth operations across all aspects of SpinWellness & Yoga. Her attention to detail and proactive approach helps our team stay focused on delivering exceptional wellness experiences to our clients. My role is to ensure the smooth operation of all Spin Wellness and Yoga activities. When I\'m not organizing or conducting research, you can find me lost in fiction.',
   },
   {
     name: 'Babalola Opeyemi',
