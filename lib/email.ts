@@ -36,6 +36,13 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 
+function createBrevoApiInstance(apiKey: string): brevo.TransactionalEmailsApi {
+  const defaultClient = brevo.ApiClient.instance;
+  const apiKeyAuth = defaultClient.authentications['api-key'];
+  apiKeyAuth.apiKey = apiKey;
+  return new brevo.TransactionalEmailsApi();
+}
+
 async function sendEmailWithRetry(
   apiInstance: brevo.TransactionalEmailsApi,
   payload: brevo.SendSmtpEmail,
@@ -237,8 +244,7 @@ export async function sendWaitlistNotification(entry: {
     <p style="color: #666; font-size: 0.9em;">automated notification from spinwellness waitlist</p>
   `;
 
-  const apiInstance = new brevo.TransactionalEmailsApi();
-  apiInstance.setApiKey(brevo.ApiKeyTypes.API_KEY, brevoApiKey);
+  const apiInstance = createBrevoApiInstance(brevoApiKey);
 
   const emailPayload: brevo.SendSmtpEmail = {
     sender: { name: 'Spinwellness Waitlist', email: 'admin@spinwellnessandyoga.com' },
@@ -283,8 +289,7 @@ export async function sendWaitlistConfirmation(entry: {
     </div>
   `;
 
-  const apiInstance = new brevo.TransactionalEmailsApi();
-  apiInstance.setApiKey(brevo.ApiKeyTypes.API_KEY, brevoApiKey);
+  const apiInstance = createBrevoApiInstance(brevoApiKey);
 
   const emailPayload: brevo.SendSmtpEmail = {
     sender: { name: 'Spinwellness & Yoga', email: 'admin@spinwellnessandyoga.com' },
@@ -331,8 +336,7 @@ export async function sendContactNotification(entry: {
     <p style="color: #666; font-size: 0.9em;">This is an automated notification from the Spinwellness contact form.</p>
   `;
 
-  const apiInstance = new brevo.TransactionalEmailsApi();
-  apiInstance.setApiKey(brevo.ApiKeyTypes.API_KEY, brevoApiKey);
+  const apiInstance = createBrevoApiInstance(brevoApiKey);
 
   const emailPayload: brevo.SendSmtpEmail = {
     sender: { name: 'Spinwellness Contact Form', email: 'admin@spinwellnessandyoga.com' },
@@ -383,8 +387,7 @@ export async function sendContactConfirmation(entry: {
     </div>
   `;
 
-  const apiInstance = new brevo.TransactionalEmailsApi();
-  apiInstance.setApiKey(brevo.ApiKeyTypes.API_KEY, brevoApiKey);
+  const apiInstance = createBrevoApiInstance(brevoApiKey);
 
   const emailPayload: brevo.SendSmtpEmail = {
     sender: { name: 'Spinwellness & Yoga', email: 'admin@spinwellnessandyoga.com' },
@@ -450,8 +453,7 @@ export async function sendEventRegistrationNotification(entry: {
     <p style="color: #666; font-size: 0.9em;">automated notification from spinwellness event registration</p>
   `;
 
-  const apiInstance = new brevo.TransactionalEmailsApi();
-  apiInstance.setApiKey(brevo.ApiKeyTypes.API_KEY, brevoApiKey);
+  const apiInstance = createBrevoApiInstance(brevoApiKey);
 
   const emailPayload: brevo.SendSmtpEmail = {
     sender: { name: 'Spinwellness Events', email: 'admin@spinwellnessandyoga.com' },
@@ -484,8 +486,7 @@ export async function sendEventRegistrationConfirmation(entry: {
 
   const rendered = renderEventRegistrationConfirmationEmail(entry);
 
-  const apiInstance = new brevo.TransactionalEmailsApi();
-  apiInstance.setApiKey(brevo.ApiKeyTypes.API_KEY, brevoApiKey);
+  const apiInstance = createBrevoApiInstance(brevoApiKey);
 
   const emailPayload: brevo.SendSmtpEmail = {
     sender: { name: 'Spinwellness & Yoga', email: 'admin@spinwellnessandyoga.com' },
@@ -558,8 +559,7 @@ export async function sendEventReminder(entry: {
     </div>
   `;
 
-  const apiInstance = new brevo.TransactionalEmailsApi();
-  apiInstance.setApiKey(brevo.ApiKeyTypes.API_KEY, brevoApiKey);
+  const apiInstance = createBrevoApiInstance(brevoApiKey);
 
   const emailPayload: brevo.SendSmtpEmail = {
     sender: { name: 'Spinwellness & Yoga', email: 'admin@spinwellnessandyoga.com' },
