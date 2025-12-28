@@ -139,13 +139,17 @@ export async function POST(request: Request) {
       status: 'confirmed',
     }, request);
 
-    const eventDate = new Date(event.start_date).toLocaleDateString('en-US', {
+    const eventStartDate = new Date(event.start_date);
+    const eventDate = eventStartDate.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+    });
+    const eventTime = eventStartDate.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
+      timeZoneName: 'short',
     });
 
     // send emails asynchronously (non-blocking)
@@ -167,6 +171,7 @@ export async function POST(request: Request) {
       sendEventRegistrationConfirmation({
         event_name: event.name,
         event_date: eventDate,
+        event_time: eventTime,
         event_location: event.location,
         event_venue: event.venue,
         event_address: getEventAddress(event.location),

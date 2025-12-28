@@ -8,8 +8,8 @@ const teamMembers = [
   {
     name: 'Ibrahim Baraqhat',
     role: 'CEO and Lead Wellness Instructor',
-    image: null,
-    bio: 'Ibrahim leads SpinWellness & Yoga with a vision to transform wellness for both individuals and workplace teams through trauma-informed practices and compassionate care. As our CEO and Lead Wellness Instructor, he combines deep expertise in wellness facilitation with strategic leadership, ensuring our programs deliver meaningful impact for individuals and organizations alike.',
+    image: '/team-ibrahim-baraqhat.jpg',
+    bio: 'Eyimofe leads SpinWellness & Yoga with a vision to transform wellness for both individuals and workplace teams through trauma-informed practices and compassionate care. As our CEO and Lead Wellness Instructor, he combines deep expertise in wellness facilitation with strategic leadership, ensuring our programs deliver meaningful impact for individuals and organizations alike.',
   },
   {
     name: 'Babalola Oluwatoyin',
@@ -57,9 +57,9 @@ export default function TeamPage() {
                         fill
                         sizes="(max-width: 640px) 100vw, (max-width: 900px) 50vw, 33vw"
                         className={styles.teamImage}
-                        priority={index < 2}
-                        quality={82}
-                        loading={index < 2 ? 'eager' : 'lazy'}
+                        priority={index === 0}
+                        quality={85}
+                        loading={index === 0 ? 'eager' : 'lazy'}
                       />
                     </div>
                   ) : (

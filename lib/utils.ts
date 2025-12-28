@@ -50,6 +50,16 @@ export function formatEventDescription(description: string): string[] {
   return paragraphs.length > 0 ? paragraphs : [text];
 }
 
+export function getEventVenue(location: string): string {
+  const locationLower = location.toLowerCase();
+  if (locationLower.includes('lagos')) {
+    return 'Alpha Fitness Studio, Lagos';
+  } else if (locationLower.includes('ibadan')) {
+    return 'TYAwithNio Studios, Ibadan';
+  }
+  return '';
+}
+
 export function getEventAddress(location: string): string {
   const locationLower = location.toLowerCase();
   if (locationLower.includes('lagos')) {
@@ -65,3 +75,10 @@ export function getMapsUrl(address: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
 }
 
+export function normalizeEventCopy(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/\s+/g, ' ')
+    .replace(/\.\s+/g, '. ')
+    .trim();
+}

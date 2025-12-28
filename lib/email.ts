@@ -88,6 +88,7 @@ async function sendEmailWithRetry(
 export function renderEventRegistrationConfirmationEmail(entry: {
   event_name: string;
   event_date: string;
+  event_time?: string;
   event_location: string;
   event_venue?: string;
   event_address?: string;
@@ -183,6 +184,7 @@ export function renderEventRegistrationConfirmationEmail(entry: {
       <div style="background: linear-gradient(135deg, #f16f64 0%, #e85a50 100%); padding: 26px; border-radius: 12px; margin-bottom: 30px; color: white; text-align: left;">
         <h2 style="color: white; margin: 0 0 14px; font-size: 20px;">Event Details</h2>
         <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Date:</strong> ${escapeHtml(entry.event_date)}</p>
+        ${entry.event_time ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Time:</strong> ${escapeHtml(entry.event_time)}</p>` : ''}
         <p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Location:</strong> ${escapeHtml(entry.event_location)}</p>
         ${entry.event_venue ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Venue:</strong> ${escapeHtml(entry.event_venue)}</p>` : ''}
         ${entry.event_address ? `<p style="color: rgba(255, 255, 255, 0.95); margin: 6px 0; font-size: 16px;"><strong>Address:</strong> <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #ffffff; text-decoration: underline;">${escapeHtml(entry.event_address)}</a></p>` : ''}
@@ -458,6 +460,7 @@ export async function sendEventRegistrationNotification(entry: {
 export async function sendEventRegistrationConfirmation(entry: {
   event_name: string;
   event_date: string;
+  event_time?: string;
   event_location: string;
   event_venue?: string;
   event_address?: string;

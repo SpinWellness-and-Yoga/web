@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Raleway, Quando } from "next/font/google";
 import "./globals.css";
+import PageTransition from "./_components/PageTransition";
 
 const raleway = Raleway({
   subsets: ["latin"],
@@ -51,7 +52,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${raleway.variable} ${quando.variable}`}>
-      <body>{children}</body>
+      <body>
+        <PageTransition>{children}</PageTransition>
+      </body>
     </html>
   );
 }

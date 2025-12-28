@@ -90,9 +90,31 @@ async function deleteRegistrationByEmail(email: string) {
   await cacheDel(cacheKeys);
   console.log(`cache invalidated for events: ${eventIds.join(', ')}`);
 
+  // try to clear cache on the Next.js server if it's running
+  const serverUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL || 'http://localhost:3000';
+  const clearCacheUrl = `${serverUrl}/api/events/clear-cache`;
+  
+  try {
+    const response = await fetch(clearCacheUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ eventIds }),
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log(`next.js server cache cleared: ${result.message}`);
+    } else {
+      console.log('next.js server cache clear failed (server may not be running)');
+    }
+  } catch (error) {
+    console.log('could not reach next.js server to clear cache (server may not be running)');
+    console.log('   you may need to refresh the page or restart the dev server');
+  }
+
   console.log(`\nsuccessfully deleted ${registration.length} registration(s) for ${normalizedEmail}`);
-  console.log('\nnote: if the web app is running, you may need to refresh the page or restart the dev server');
-  console.log('      to see the updated registration counts (cache is in-memory in the server process)');
 }
 
 async function main() {

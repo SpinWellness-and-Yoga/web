@@ -1,0 +1,78 @@
+.eventsSection {
+  padding: 4rem 2rem;
+}
+
+.eventsContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 4rem;
+  color: #322216;
+}
+
+.eventCard {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(21, 27, 71, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.eventCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(21, 27, 71, 0.1);
+}
+
+.eventCardSoldOut {
+  opacity: 0.7;
+}
+
+.eventTitle {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #151b47;
+}
+
+.eventMeta {
+  font-size: 0.9rem;
+  color: #322216;
+  margin-bottom: 1rem;
+}
+
+.eventDescription {
+  color: #322216;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.registerButton {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: #f16f64;
+  color: white;
+  border-radius: 25px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.registerButton:hover {
+  background: #e85a50;
+  transform: scale(1.05);
+}
+
+.soldOutButton {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: #dfd9d4;
+  color: #777;
+  border-radius: 25px;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: not-allowed;
+  user-select: none;
+}
+
