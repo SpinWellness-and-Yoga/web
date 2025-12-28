@@ -9,7 +9,7 @@ const teamMembers = [
     name: 'Ibrahim Baraqhat',
     role: 'CEO and Lead Wellness Instructor',
     image: '/team-ibrahim-baraqhat.jpg',
-    bio: 'Eyimofe leads SpinWellness & Yoga with a vision to transform wellness for both individuals and workplace teams through trauma-informed practices and compassionate care. As our CEO and Lead Wellness Instructor, he combines deep expertise in wellness facilitation with strategic leadership, ensuring our programs deliver meaningful impact for individuals and organizations alike.',
+    bio: 'Eyimofe leads SpinWellness & Yoga with a vision to transform wellness for both individuals and workplace teams through trauma-informed practices and compassionate care. As our CEO and Lead Wellness Instructor, she combines deep expertise in wellness facilitation with strategic leadership, ensuring our programs deliver meaningful impact for individuals and organizations alike.',
   },
   {
     name: 'Babalola Oluwatoyin',
@@ -21,7 +21,7 @@ const teamMembers = [
     name: 'Ibukunoluwa Junaid',
     role: 'Assistant',
     image: '/team-ibukunoluwa-junaid-khadijat.jpg',
-    bio: 'Khadijat provides essential organizational support and ensures smooth operations across all aspects of SpinWellness & Yoga. Her attention to detail and proactive approach helps our team stay focused on delivering exceptional wellness experiences to our clients. My role is to ensure the smooth operation of all Spin Wellness and Yoga activities. When I\'m not organizing or conducting research, you can find me lost in fiction.',
+    bio: 'Ibukun provides essential organizational support and ensures smooth operations across all aspects of SpinWellness & Yoga. Her attention to detail and proactive approach helps our team stay focused on delivering exceptional wellness experiences to our clients. My role is to ensure the smooth operation of all Spin Wellness and Yoga activities. When I\'m not organizing or conducting research, you can find me lost in fiction.',
   },
   {
     name: 'Babalola Opeyemi',
