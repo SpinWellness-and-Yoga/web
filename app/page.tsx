@@ -170,7 +170,6 @@ export default function Home() {
             <p>Spinwellness & Yoga — wellness, therapy, and culture design for modern teams.</p>
           </div>
           <div className={styles.footerMeta}>
-            <Link href="/terms" style={{ color: 'inherit', textDecoration: 'underline' }}>Terms & Conditions</Link>
             <span>© 2025 Spinwellness & Yoga. All rights reserved.</span>
           </div>
         </div>

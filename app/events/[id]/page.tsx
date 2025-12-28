@@ -112,29 +112,15 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                   </p>
                 ))}
               </div>
-              <div style={{ marginTop: '2rem' }}>
-                <Link 
-                  href={`/faqs/events/${event.id}`}
-                    style={{
-                    color: '#F16F64', 
-                    textDecoration: 'underline',
-                    fontSize: '1rem',
-                    fontWeight: '600'
-                  }}
-                >
-                  {capitalizeWords('view frequently asked questions')} →
-                </Link>
-              </div>
-              </div>
+            </div>
 
             <EventRegistrationClient 
               eventId={event.id} 
               capacity={event.capacity}
               initialRegistrationCount={registeredCount}
-                />
-              </div>
+            />
+          </div>
         </section>
-
       </main>
     </div>
   );

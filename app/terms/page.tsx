@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Navbar from '../_components/Navbar';
 import styles from '../page.module.css';
 
 export const metadata = {
@@ -9,7 +8,6 @@ export const metadata = {
 export default function TermsPage() {
   return (
     <div className={styles.shell}>
-      <Navbar />
       <main className={styles.main} style={{ maxWidth: 900 }}>
         <h1 style={{ color: '#151B47', marginBottom: '1rem' }}>terms & conditions</h1>
 
