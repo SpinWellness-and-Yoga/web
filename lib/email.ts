@@ -67,9 +67,10 @@ async function sendEmailWithRetry(
         )
       ]) as any;
       
-      if (result?.messageId) {
+      const messageId = result?.body?.messageId || result?.messageId;
+      if (messageId) {
         logger.info(`${emailType} email sent`, { 
-          emailId: result.messageId, 
+          emailId: messageId, 
           to: Array.isArray(payload.to) ? payload.to.map((t: any) => t.email || t).join(', ') : payload.to,
           attempt,
         });
@@ -308,7 +309,8 @@ export async function sendWaitlistConfirmation(entry: {
 
   try {
     const result = await apiInstance.sendTransacEmail(emailPayload);
-    if (!result.messageId) {
+    const messageId = (result as any)?.body?.messageId || (result as any)?.messageId;
+    if (!messageId) {
       console.error('[sendWaitlistConfirmation] Brevo API error: no messageId returned');
     }
   } catch (error) {
@@ -355,7 +357,8 @@ export async function sendContactNotification(entry: {
 
   try {
     const result = await apiInstance.sendTransacEmail(emailPayload);
-    if (!result.messageId) {
+    const messageId = (result as any)?.body?.messageId || (result as any)?.messageId;
+    if (!messageId) {
       console.error('[sendContactNotification] Brevo API error: no messageId returned');
     }
   } catch (error) {
@@ -406,7 +409,8 @@ export async function sendContactConfirmation(entry: {
 
   try {
     const result = await apiInstance.sendTransacEmail(emailPayload);
-    if (!result.messageId) {
+    const messageId = (result as any)?.body?.messageId || (result as any)?.messageId;
+    if (!messageId) {
       console.error('[sendContactConfirmation] Brevo API error: no messageId returned');
     }
   } catch (error) {
@@ -578,7 +582,8 @@ export async function sendEventReminder(entry: {
 
   try {
     const result = await apiInstance.sendTransacEmail(emailPayload);
-    if (!result.messageId) {
+    const messageId = (result as any)?.body?.messageId || (result as any)?.messageId;
+    if (!messageId) {
       console.log('[sendEventReminder] Email sending failed: no messageId returned');
     } else {
       console.log('[sendEventReminder] Reminder email sent successfully');
