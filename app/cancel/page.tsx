@@ -1,16 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import styles from '../page.module.css';
 import Navbar from '../_components/Navbar';
 
 export default function CancelTicketPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [ticketNumber, setTicketNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ticketParam = searchParams.get('ticket');
+    if (ticketParam) {
+      setTicketNumber(ticketParam);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
