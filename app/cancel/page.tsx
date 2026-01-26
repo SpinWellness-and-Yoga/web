@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from '../page.module.css';
 import Navbar from '../_components/Navbar';
 
-export default function CancelTicketPage() {
+function CancelTicketContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [ticketNumber, setTicketNumber] = useState('');
@@ -153,6 +153,18 @@ export default function CancelTicketPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function CancelTicketPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div>Loading...</div>
+      </div>
+    }>
+      <CancelTicketContent />
+    </Suspense>
   );
 }
 

@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const env = getEnvFromRequest(request) || process.env;
-    
+
     const { event_id, name, gender, profession, phone_number, email, location_preference, needs_directions, notes } = body;
 
     // basic required field check
@@ -171,7 +171,6 @@ export async function POST(request: Request) {
       sendEventRegistrationConfirmation({
         event_name: event.name,
         event_date: eventDate,
-        event_time: eventTime,
         event_location: event.location,
         event_venue: event.venue,
         event_address: getEventAddress(event.location),
@@ -185,7 +184,7 @@ export async function POST(request: Request) {
     });
 
     const responseData = { success: true, registration };
-    
+
     // store in idempotency cache for 5 minutes
     idempotencyStore.set(idempotencyKey, {
       response: responseData,
@@ -193,8 +192,8 @@ export async function POST(request: Request) {
     });
 
     const duration = Date.now() - startTime;
-    logger.info('registration successful', { 
-      eventId: event_id, 
+    logger.info('registration successful', {
+      eventId: event_id,
       ticketNumber: registration.ticket_number,
       duration: `${duration}ms`,
       ip: clientIp,
@@ -203,7 +202,7 @@ export async function POST(request: Request) {
     return NextResponse.json(responseData, { status: 201 });
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error('registration failed', error, { 
+    logger.error('registration failed', error, {
       email: sanitizedEmail,
       ip: clientIp,
       duration: `${duration}ms`,
