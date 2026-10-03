@@ -48,4 +48,9 @@ wrangler.toml
 *.toml
 wrangler.toml
 .env.local.backup
-.cursor
+.cursor.env
+.env.local
+.env.*.local
+
+# generated website media worker configuration
+/wrangler.cms.json

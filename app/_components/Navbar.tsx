@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import styles from '../page.module.css';
 
 type NavbarProps = {
@@ -114,22 +113,13 @@ export default function Navbar({ className }: NavbarProps) {
       className={`${styles.navbar} ${(isScrollingDown && !mobileMenuOpen) ? styles.hidden : ''} ${className ?? ''}`}
     >
       <div className={styles.navInner}>
-        <Link href="/" className={styles.brand} aria-label="home">
-          <Image
-            src="/logos/SWAY-logomark-PNG.png"
-            alt="Spinwellness & Yoga"
-              width={760}
-              height={760}
-            priority
-            quality={95}
-            style={{ background: 'transparent' }}
-          />
-        </Link>
+        <Link href="/" className={styles.brandText} aria-label="Spinwellness home">Home</Link>
 
         <nav className={styles.navLinks} aria-label="Primary">
           <Link href="/#services">Services</Link>
           <Link href="/#why">Why Us</Link>
           <Link href="/events">Events</Link>
+          <Link href="/blog">Journal</Link>
           <Link href="/team">Team</Link>
           <Link href="/contact">Contact</Link>
         </nav>
@@ -137,7 +127,8 @@ export default function Navbar({ className }: NavbarProps) {
         <button
           className={styles.hamburger}
           onClick={handleToggleMenu}
-          aria-label="toggle menu"
+          aria-label="Toggle menu"
+          aria-expanded={mobileMenuOpen}
           type="button"
         >
           <span />
@@ -164,6 +155,7 @@ export default function Navbar({ className }: NavbarProps) {
         <Link href="/events" onClick={() => setMobileMenuOpen(false)}>
           Events
         </Link>
+        <Link href="/blog" onClick={() => setMobileMenuOpen(false)}>Journal</Link>
         <Link href="/team" onClick={() => setMobileMenuOpen(false)}>
           Team
         </Link>

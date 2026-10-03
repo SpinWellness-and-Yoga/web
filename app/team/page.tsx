@@ -1,37 +1,14 @@
-'use client';
 
 import Image from 'next/image';
+import { readSiteContent } from '@/lib/site-content';
 import Navbar from '../_components/Navbar';
 import styles from './page.module.css';
 
-const teamMembers = [
-  {
-    name: 'Ibrahim Baraqhat',
-    role: 'CEO and Lead Wellness Instructor',
-    image: '/team-ibrahim-baraqhat.jpg',
-    bio: 'Eyimofe leads SpinWellness & Yoga with a vision to transform wellness for both individuals and workplace teams through trauma-informed practices and compassionate care. As our CEO and Lead Wellness Instructor, she combines deep expertise in wellness facilitation with strategic leadership, ensuring our programs deliver meaningful impact for individuals and organizations alike.',
-  },
-  {
-    name: 'Babalola Oluwatoyin',
-    role: 'Social Media Manager',
-    image: '/team-babalola-oluwatoyin.png',
-    bio: 'Oluwatoyin brings creativity and strategic vision to our social media presence, crafting content that resonates with our community and amplifies our wellness mission. With a keen eye for design and storytelling, she ensures our message reaches and inspires those seeking holistic workplace wellness solutions. Responsible for maintaining the organisation\'s online presence and coordinating content across its digital platforms.',
-  },
-  {
-    name: 'Ibukunoluwa Junaid',
-    role: 'Assistant',
-    image: '/team-ibukunoluwa-junaid-khadijat.jpg',
-    bio: 'Ibukun provides essential organizational support and ensures smooth operations across all aspects of SpinWellness & Yoga. Her attention to detail and proactive approach helps our team stay focused on delivering exceptional wellness experiences to our clients. My role is to ensure the smooth operation of all Spin Wellness and Yoga activities. When I\'m not organizing or conducting research, you can find me lost in fiction.',
-  },
-  {
-    name: 'Babalola Opeyemi',
-    role: 'Engineering Lead',
-    image: null,
-    bio: 'Opeyemi leads our engineering efforts with expertise in building scalable, robust systems. Highly introverted, he enjoys designing and building complex software systems, listening to music, and watching anime. His technical leadership ensures our platform delivers seamless experiences for teams seeking wellness solutions.',
-  },
-];
 
-export default function TeamPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function TeamPage() {
+  const { items: teamMembers } = await readSiteContent('team');
   return (
     <div className={styles.shell}>
       <Navbar />
@@ -53,6 +30,7 @@ export default function TeamPage() {
                     <div className={styles.imageWrapper}>
                       <Image
                         src={member.image}
+                        unoptimized
                         alt={`${member.name}, ${member.role}`}
                         fill
                         sizes="(max-width: 640px) 100vw, (max-width: 900px) 50vw, 33vw"

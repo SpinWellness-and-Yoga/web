@@ -1,8 +1,7 @@
-import nextConfig from "eslint-config-next";
+import nextConfig from 'eslint-config-next';
 
-export default [
-  {
-    ignores: ["node_modules/**", ".next/**"],
-  },
+const config = [
+  { ignores: ['node_modules/**', '.next*/**', '.open-next/**', '.wrangler/**', 'out/**', 'coverage/**'] },
   ...nextConfig,
 ];
+export default config;

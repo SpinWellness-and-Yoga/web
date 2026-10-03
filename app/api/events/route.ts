@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAllEventsWithCounts } from '../../../lib/events-storage';
 import { logger } from '../../../lib/logger';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   const startTime = Date.now();
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        'Cache-Control': 'no-store',
         'X-Response-Time': `${duration}ms`,
       }
     });
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        'Cache-Control': 'no-store',
       }
     });
   }

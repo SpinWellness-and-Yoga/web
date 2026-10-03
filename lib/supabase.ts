@@ -29,6 +29,7 @@ export function getSupabaseClient(): SupabaseClient | null {
         schema: 'public',
       },
       global: {
+        fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
         headers: {
           'x-application': 'spinwellness',
         },

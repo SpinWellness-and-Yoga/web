@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getEventByIdWithCount } from '../../../../lib/events-storage';
 import { logger } from '../../../../lib/logger';
 
-export const revalidate = 180;
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: Request,
@@ -31,7 +31,7 @@ export async function GET(
     return NextResponse.json(event, { 
       status: 200,
       headers: {
-        'Cache-Control': 'public, s-maxage=180, stale-while-revalidate=360',
+        'Cache-Control': 'no-store',
         'X-Response-Time': `${duration}ms`,
       }
     });

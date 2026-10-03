@@ -1,10 +1,7 @@
 import { getSupabaseClient } from './supabase';
 import { logger } from './logger';
 import { generateSecureTicketNumber } from './ticket-generator';
-import { cacheDel, cacheGetJson, cacheSetJson } from './cache';
-import { CACHE_CONFIG } from './constants';
-
-const inflight = new Map<string, Promise<any>>();
+import { cmsClient } from './cms/client';
 
 export interface Event {
   id: string;
@@ -18,7 +15,7 @@ export interface Event {
   capacity: number;
   price: number;
   is_active: number;
-  locations?: string;
+  locations?: string | string[];
   created_at?: string;
   updated_at?: string;
   registration_count?: number;
@@ -41,20 +38,6 @@ export interface EventRegistration {
 }
 
 export async function getAllEventsWithCounts(request?: Request): Promise<Event[]> {
-  const cacheKey = 'events:all:with-counts';
-  const cached = await cacheGetJson<Event[]>(cacheKey);
-  
-  if (cached) {
-    logger.debug('returning cached events list');
-    return cached;
-  }
-
-  const existing = inflight.get(cacheKey);
-  if (existing) {
-    return (await existing) as Event[];
-  }
-
-  const work = (async () => {
     const supabase = getSupabaseClient();
     
     if (!supabase) {
@@ -99,18 +82,12 @@ export async function getAllEventsWithCounts(request?: Request): Promise<Event[]
         registration_count: event.event_registrations?.[0]?.count || 0,
       })) as Event[];
 
-      await cacheSetJson(cacheKey, events, CACHE_CONFIG.EVENTS_LIST_TTL);
       return events;
     } catch (error) {
       logger.error('exception fetching events with counts', error);
       return [];
-    } finally {
-      inflight.delete(cacheKey);
     }
-  })();
 
-  inflight.set(cacheKey, work);
-  return await work;
 }
 
 // preload events into cache (call on app startup or warmup)
@@ -198,20 +175,6 @@ export async function getEventById(id: string, request?: Request): Promise<Event
 }
 
 export async function getEventByIdWithCount(id: string, request?: Request): Promise<Event | null> {
-  const cacheKey = `event:${id}:with-count`;
-  const cached = await cacheGetJson<Event>(cacheKey);
-  
-  if (cached) {
-    logger.debug('returning cached event', { eventId: id });
-    return cached;
-  }
-
-  const existing = inflight.get(cacheKey);
-  if (existing) {
-    return (await existing) as Event | null;
-  }
-
-  const work = (async () => {
   const supabase = getSupabaseClient();
   
   if (!supabase) {
@@ -245,18 +208,12 @@ export async function getEventByIdWithCount(id: string, request?: Request): Prom
       registration_count: data.event_registrations?.[0]?.count || 0,
     } as Event;
 
-    await cacheSetJson(cacheKey, event, CACHE_CONFIG.EVENT_DETAIL_TTL);
     return event;
   } catch (error) {
     logger.error('exception fetching event by id', error);
     return null;
-  } finally {
-    inflight.delete(cacheKey);
   }
-  })();
 
-  inflight.set(cacheKey, work);
-  return await work;
 }
 
 export async function getEventRegistrations(eventId: string, request?: Request): Promise<EventRegistration[]> {
@@ -349,79 +306,24 @@ export async function createEventRegistration(
   registration: Omit<EventRegistration, 'id' | 'created_at' | 'ticket_number'>,
   request?: Request
 ): Promise<EventRegistration> {
-  const supabase = getSupabaseClient();
-  
-  if (!supabase) {
-    logger.error('supabase client unavailable for registration');
-    throw new Error('database unavailable');
+  const supabase = cmsClient(true);
+  const { data, error } = await supabase.rpc('cms_register_event', {
+    registration: {
+      ...registration,
+      email: registration.email.toLowerCase().trim(),
+      needs_directions: registration.needs_directions === 1,
+      notes: registration.notes || null,
+      ticket_number: generateSecureTicketNumber(),
+    },
+  });
+  if (error) {
+    if (error.code === '23505') throw new Error('registration already exists');
+    const msg = (error.message || '').toLowerCase();
+    if (msg.includes('capacity') || msg.includes('full')) throw new Error('event is at capacity');
+    if (msg.includes('not found') || msg.includes('unavailable')) throw new Error('event not found');
+    if (msg.includes('location')) throw new Error('invalid location preference');
+    throw new Error('registration could not be saved');
   }
-
-  const ticketNumber = generateSecureTicketNumber();
-  const normalizedEmail = registration.email.toLowerCase().trim();
-
-  try {
-    // check capacity before inserting
-    const { data: eventData, error: eventError } = await supabase
-      .from('events')
-      .select('capacity, event_registrations(count)')
-      .eq('id', registration.event_id)
-      .eq('is_active', true)
-      .single();
-
-    if (eventError || !eventData) {
-      logger.error('event not found during registration', eventError);
-      throw new Error('event not found');
-    }
-
-    const registrationCount = eventData.event_registrations?.[0]?.count || 0;
-    if (eventData.capacity > 0 && registrationCount >= eventData.capacity) {
-      logger.warn('event at capacity');
-      throw new Error('event is at capacity');
-    }
-
-    // insert registration with optimistic locking
-    const { data, error } = await supabase
-      .from('event_registrations')
-      .insert({
-        event_id: registration.event_id,
-        name: registration.name,
-        gender: registration.gender,
-        profession: registration.profession,
-        phone_number: registration.phone_number,
-        email: normalizedEmail,
-        location_preference: registration.location_preference,
-        needs_directions: registration.needs_directions === 1,
-        notes: registration.notes || null,
-        ticket_number: ticketNumber,
-        status: registration.status || 'confirmed',
-      })
-      .select()
-      .single();
-
-    if (error) {
-      // check for unique constraint violation
-      if (error.code === '23505') {
-        logger.warn('duplicate registration attempt', { eventId: registration.event_id, email: normalizedEmail });
-        throw new Error('registration already exists');
-      }
-      logger.error('failed to create registration', error, { eventId: registration.event_id });
-      throw error;
-    }
-
-    // invalidate cache after successful registration
-    await cacheDel([
-      `event:${registration.event_id}:with-count`,
-      'events:all:with-counts',
-    ]);
-
-    logger.info('registration created successfully');
-
-    return {
-      ...data,
-      needs_directions: data.needs_directions ? 1 : 0,
-    } as EventRegistration;
-  } catch (error) {
-    logger.error('exception creating registration', error);
-    throw error;
-  }
+  if (!data) throw new Error('registration could not be saved');
+  return { ...data, needs_directions: data.needs_directions ? 1 : 0 } as EventRegistration;
 }

@@ -1,34 +1,13 @@
-'use client';
 
 import Image from "next/image";
+import { readSiteContent } from "@/lib/site-content";
+import LatestPosts from "./blog/_components/LatestPosts";
 import Link from "next/link";
 import Navbar from "./_components/Navbar";
 import WaitlistCard from "./_components/WaitlistCard";
 import { BuildingIcon, LightningIcon, HeartIcon, PlantIcon } from "./_components/Icons";
 import styles from "./page.module.css";
 
-const services = [
-  {
-    title: "1:1 therapy & weekly wellness",
-    copy: "Certified therapists and instructors supporting every employee with calm, consistent care.",
-  },
-  {
-    title: "Evergreen wellness library",
-    copy: "Accessible wellness and productivity library with yoga, fitness, nutrition, breathwork, books, and guided support on demand.",
-  },
-  {
-    title: "Wellness meets productivity",
-    copy: "Guided rituals, deep-work sprints, and wellbeing nudges that keep teams clear-headed and sustainably productive.",
-  },
-  {
-    title: "Culture design & onboarding",
-    copy: "Intentional onboarding experiences and manager toolkits that embed wellbeing from day one.",
-  },
-  {
-    title: "Curated wellness kits",
-    copy: "Co-branded welcome packs, stress tools, and physical touchpoints tailored to every company.",
-  },
-];
 
 const promises = [
   "Employee wellbeing programs with 1:1 therapy and wellness sessions",
@@ -42,7 +21,11 @@ const stats = [
   { value: "3x", label: "productivity lift after 90 days" },
 ];
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const [homepage, serviceContent] = await Promise.all([readSiteContent("homepage"), readSiteContent("services")]);
+  const services = serviceContent.items;
   return (
     <div className={styles.shell}>
       <Navbar />
@@ -53,9 +36,9 @@ export default function Home() {
             <div className={styles.heroCopy}>
               <span className={styles.kicker}>Transforming Employee Wellness</span>
               <div className={styles.whatWeDoSection}>
-                <h2 className={styles.whatWeDoTitle}>What We Do</h2>
+                <h2 className={styles.whatWeDoTitle}>{homepage.heading}</h2>
                 <p className={styles.whatWeDoIntro}>
-                  Providing comprehensive corporate and employee wellness services that transform workplace culture, boost productivity, and nurture sustainable wellbeing for modern teams.
+                  {homepage.introduction}
                 </p>
                 <div className={styles.heroHighlights}>
                   <div className={styles.highlightItem}>
@@ -91,6 +74,7 @@ export default function Home() {
               </div>
             </div>
             <aside className={styles.heroCard}>
+              {homepage.hero_image && <Image src={homepage.hero_image} alt={homepage.hero_alt} width={640} height={420} unoptimized className={styles.managedHero} />}
               <WaitlistCard />
             </aside>
           </div>
@@ -107,6 +91,7 @@ export default function Home() {
           <div className={styles.serviceGrid}>
             {services.map((service) => (
               <article key={service.title} className={styles.serviceCard}>
+                {service.image && <Image src={service.image} alt={service.image_alt || ""} width={640} height={400} unoptimized className={styles.serviceImage} />}
                 <h3>{service.title}</h3>
                 <p>{service.copy}</p>
               </article>
@@ -152,6 +137,8 @@ export default function Home() {
             ))}
           </div>
         </section>
+
+        <LatestPosts />
 
         <section className={styles.ctaSection} id="waitlist">
           <h2>Transform how your teams experience workplace wellness.</h2>

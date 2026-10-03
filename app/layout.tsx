@@ -1,22 +1,22 @@
 import type { Metadata } from "next";
-import { Raleway, Quando } from "next/font/google";
+import { Manrope, DM_Sans } from "next/font/google";
 import "./globals.css";
 import PageTransition from "./_components/PageTransition";
 
-const raleway = Raleway({
+const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
 });
 
-const quando = Quando({
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  weight: ["400"],
   variable: "--font-display",
   display: "swap",
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.CMS_SITE_URL || "https://spinwellness.org"),
   title: "Spinwellness & Yoga | Employee Wellness, Therapy, and Culture Design",
   description:
     "Spinwellness & Yoga delivers tailored employee wellness programs, immersive therapy support, and on-demand resources designed to elevate team wellbeing.",
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     description:
       "Join the Spinwellness & Yoga waitlist and be first to access bespoke wellness programs, therapy sessions, and 24/7 resources.",
     type: "website",
-    url: "https://spinwellness.com",
+    url: "https://spinwellness.org",
   },
   twitter: {
     card: "summary_large_image",
@@ -51,7 +51,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${raleway.variable} ${quando.variable}`}>
+    <html lang="en" className={`${manrope.variable} ${dmSans.variable}`}>
       <body>
         <PageTransition>{children}</PageTransition>
       </body>

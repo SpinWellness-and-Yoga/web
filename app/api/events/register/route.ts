@@ -2,11 +2,10 @@ import { NextResponse } from 'next/server';
 import { createEventRegistration, checkDuplicateRegistration, getEventById } from '@/lib/events-storage';
 import { sendEventRegistrationNotification, sendEventRegistrationConfirmation } from '@/lib/email';
 import { getEventAddress } from '@/lib/utils';
-import { validateRegistration, sanitizeRegistrationInput } from '@/lib/validation';
+import { validateRegistration, sanitizeRegistrationInput, eventAllowsLocation } from '@/lib/validation';
 import { checkRegistrationRateLimit, getClientIp } from '@/lib/rate-limit';
 import { generateIdempotencyKey } from '@/lib/ticket-generator';
 import { logger } from '@/lib/logger';
-import { cache } from '@/lib/cache';
 
 function getEnvFromRequest(request: Request): any {
   const req = request as any;
@@ -52,7 +51,7 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const env = getEnvFromRequest(request) || process.env;
-
+    
     const { event_id, name, gender, profession, phone_number, email, location_preference, needs_directions, notes } = body;
 
     // basic required field check
@@ -125,6 +124,10 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!eventAllowsLocation(event, sanitizedInput.location_preference)) {
+      return NextResponse.json({ error: 'invalid location preference' }, { status: 400 });
+    }
+
     // create registration (with atomic capacity check inside)
     const registration = await createEventRegistration({
       event_id: event_id.toString().trim(),
@@ -141,12 +144,14 @@ export async function POST(request: Request) {
 
     const eventStartDate = new Date(event.start_date);
     const eventDate = eventStartDate.toLocaleDateString('en-US', {
+      timeZone: 'UTC',
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
     const eventTime = eventStartDate.toLocaleTimeString('en-US', {
+      timeZone: 'UTC',
       hour: 'numeric',
       minute: '2-digit',
       timeZoneName: 'short',
@@ -171,6 +176,9 @@ export async function POST(request: Request) {
       sendEventRegistrationConfirmation({
         event_name: event.name,
         event_date: eventDate,
+        event_time: eventTime,
+        event_start_iso: event.start_date,
+        event_end_iso: event.end_date,
         event_location: event.location,
         event_venue: event.venue,
         event_address: getEventAddress(event.location),
@@ -184,7 +192,7 @@ export async function POST(request: Request) {
     });
 
     const responseData = { success: true, registration };
-
+    
     // store in idempotency cache for 5 minutes
     idempotencyStore.set(idempotencyKey, {
       response: responseData,
@@ -192,8 +200,8 @@ export async function POST(request: Request) {
     });
 
     const duration = Date.now() - startTime;
-    logger.info('registration successful', {
-      eventId: event_id,
+    logger.info('registration successful', { 
+      eventId: event_id, 
       ticketNumber: registration.ticket_number,
       duration: `${duration}ms`,
       ip: clientIp,
@@ -202,7 +210,7 @@ export async function POST(request: Request) {
     return NextResponse.json(responseData, { status: 201 });
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error('registration failed', error, {
+    logger.error('registration failed', error, { 
       email: sanitizedEmail,
       ip: clientIp,
       duration: `${duration}ms`,

@@ -1,4 +1,4 @@
-import { VALID_GENDERS, VALID_LOCATIONS, VALIDATION_LIMITS } from './constants';
+import { VALID_GENDERS, VALIDATION_LIMITS } from './constants';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\d+$/;
@@ -60,7 +60,7 @@ export function validateRegistration(data: Partial<RegistrationInput>): Validati
     errors.profession = 'profession is required';
   }
 
-  if (!data.location_preference || !VALID_LOCATIONS.includes(data.location_preference as any)) {
+  if (!data.location_preference?.trim() || data.location_preference.length > 300) {
     errors.location_preference = 'invalid location preference';
   }
 
@@ -81,8 +81,24 @@ export function sanitizeRegistrationInput(data: Partial<RegistrationInput>): Reg
     phone_number: sanitizePhone(data.phone_number),
     gender: sanitizeString(data.gender, 50),
     profession: sanitizeString(data.profession, VALIDATION_LIMITS.PROFESSION_MAX),
-    location_preference: sanitizeString(data.location_preference, 50).toLowerCase(),
+    location_preference: sanitizeString(data.location_preference, 300).toLowerCase(),
     notes: data.notes ? sanitizeString(data.notes, VALIDATION_LIMITS.NOTES_MAX) : undefined,
   };
 }
 
+
+export function eventAllowsLocation(event: { location: string; locations?: unknown }, selected: string): boolean {
+  let locations = event.locations;
+  if (typeof locations === 'string') {
+    try {
+      locations = JSON.parse(locations);
+    } catch {
+      locations = [locations];
+    }
+  }
+  const candidates: unknown[] = [event.location, ...(Array.isArray(locations) ? locations : [locations])];
+  const normalized = selected.trim().toLowerCase();
+  return normalized.length > 0 && normalized.length <= 300 && candidates.some(
+    (location) => typeof location === 'string' && location.trim().toLowerCase() === normalized,
+  );
+}

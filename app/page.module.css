@@ -848,3 +848,10 @@
   line-height: 1.6;
   font-size: 1rem;
 }
+
+.brandText { font-family: var(--font-sans), sans-serif; font-weight: 750; font-size: 1.1rem; color: #19352b; white-space: nowrap; letter-spacing: -.04em; }
+.brandText span { font-weight: 450; }
+.managedHero, .serviceImage { width: 100%; height: auto; object-fit: cover; border-radius: 18px; aspect-ratio: 16 / 10; }
+.navbar { background: #fdf7f1f5; backdrop-filter: blur(12px); border-bottom: 1px solid #e4ded3; }
+.navInner { min-height: 80px; }
+@media (max-width: 480px) { .brandText { font-size: .95rem; } }

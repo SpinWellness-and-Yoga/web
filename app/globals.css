@@ -113,3 +113,10 @@ section {
     align-self: end;
   }
 }
+
+:root { --color-evergreen: #335c4e; --color-midnight: #091944; --color-ivory: #f8f5ef; --color-sand: #e9e4db; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  main, .page-transition { animation: none; }
+  .page-transition-wrapper { transition: none; }
+}

@@ -2,6 +2,7 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   reactStrictMode: true,
   outputFileTracingRoot: path.resolve(__dirname),
 
@@ -33,4 +34,13 @@ const nextConfig = {
   
 }
 
-module.exports = nextConfig
+module.exports = async (phase) => {
+  const { PHASE_DEVELOPMENT_SERVER } = require('next/constants');
+  if (phase === PHASE_DEVELOPMENT_SERVER) {
+    const { initOpenNextCloudflareForDev } = await import('@opennextjs/cloudflare');
+    await initOpenNextCloudflareForDev({
+      configPath: path.join(__dirname, 'wrangler.local.json'),
+    });
+  }
+  return nextConfig;
+}

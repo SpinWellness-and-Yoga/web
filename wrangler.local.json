@@ -1,0 +1,14 @@
+{
+  "name": "spinwellness-local",
+  "compatibility_date": "2025-03-25",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "r2_buckets": [
+    {
+      "binding": "CMS_MEDIA",
+      "bucket_name": "spinwellness-local-media",
+      "remote": false
+    }
+  ]
+}

@@ -19,8 +19,8 @@ function getEnvFromRequest(request: Request): any {
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET || process.env.VERCEL_CRON_SECRET;
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json(
       { error: 'unauthorized' },
       { status: 401 }
@@ -30,11 +30,11 @@ export async function GET(request: Request) {
   try {
     const env = getEnvFromRequest(request) || process.env;
     const events = await getAllEvents(request);
-
+    
     const twoDaysFromNow = new Date();
     twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
     twoDaysFromNow.setHours(0, 0, 0, 0);
-
+    
     const twoDaysFromNowEnd = new Date(twoDaysFromNow);
     twoDaysFromNowEnd.setHours(23, 59, 59, 999);
 
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
 
     for (const event of eventsInTwoDays) {
       const registrations = await getEventRegistrations(event.id, request);
-
+      
       console.log(`[send-reminders] Processing event ${event.id}: ${registrations.length} registrations`);
 
       for (const registration of registrations) {
@@ -75,7 +75,10 @@ export async function GET(request: Request) {
           await sendEventReminder({
             event_name: event.name,
             event_date: eventDateFormatted,
+            event_time: eventTimeFormatted,
             event_location: venue || event.location,
+            event_address: address || event.location,
+            event_id: event.id,
             name: registration.name,
             email: registration.email,
             ticket_number: registration.ticket_number,

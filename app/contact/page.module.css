@@ -305,3 +305,6 @@
   }
 }
 
+
+.contactDetails { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; font-style: normal; padding: 20px; }
+.contactDetails a { text-decoration: underline; text-underline-offset: 4px; }

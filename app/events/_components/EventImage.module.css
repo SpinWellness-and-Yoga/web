@@ -1,0 +1,1 @@
+.card,.hero{position:relative;width:100%;overflow:hidden;background:#e5e8dd;border-radius:14px}.card{aspect-ratio:16/10;margin-bottom:24px}.hero{aspect-ratio:21/9;max-width:1200px;margin:0 auto 32px}.image{object-fit:cover;object-position:center}@media(max-width:768px){.hero{aspect-ratio:4/3;border-radius:12px;margin-bottom:24px}.card{aspect-ratio:4/3}}

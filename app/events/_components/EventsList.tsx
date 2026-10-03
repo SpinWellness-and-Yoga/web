@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import EventImage from './EventImage';
 import styles from '../../page.module.css';
 import eventsStyles from './EventsList.module.css';
 import { capitalizeWords } from '../../../lib/utils';
@@ -125,6 +126,7 @@ export default function EventsList({ events }: EventsListProps) {
                 key={event.id} 
                 className={eventsStyles.eventCard}
               >
+                <EventImage url={event.image_url} name={capitalizeWords(event.name)} />
                 <h3 className={eventsStyles.eventTitle}>{capitalizeWords(event.name)}</h3>
                 <div className={eventsStyles.eventMeta}>
                   <p><strong>Date:</strong> {formatDate(event.start_date)}</p>
