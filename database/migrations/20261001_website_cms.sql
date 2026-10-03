@@ -11,7 +11,7 @@ create function public.cms_is_editor() returns boolean language sql stable secur
 $$;
 revoke all on function public.cms_is_editor() from public;
 grant execute on function public.cms_is_editor() to authenticated;
-create table public.blog_posts (
+create table public.website_posts (
   id uuid primary key default gen_random_uuid(), slug text not null unique check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and length(slug) <= 160),
   title text not null check(length(title) between 1 and 180), excerpt text not null check(length(excerpt) between 1 and 400),
   body text not null check(length(body) between 1 and 100000), category text not null check(length(category) between 1 and 80),
@@ -20,7 +20,7 @@ create table public.blog_posts (
   version integer not null default 1, published_at timestamptz, created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
   check (cover_url = '' or length(cover_alt) > 0)
 );
-create index blog_posts_public on public.blog_posts(status,published_at desc);
+create index website_posts_public on public.website_posts(status,published_at desc);
 create table public.website_content (
   key text primary key check(key in ('homepage','services','team','faq','contact')),
   value jsonb not null check(jsonb_typeof(value) = 'object' and octet_length(value::text) <= 150000),
@@ -42,13 +42,13 @@ create table public.website_rate_limits (
   key text primary key, attempts integer not null, window_start timestamptz not null
 );
 alter table public.events add column if not exists version integer not null default 1;
-alter table public.blog_posts enable row level security;
+alter table public.website_posts enable row level security;
 alter table public.website_content enable row level security;
 alter table public.website_media enable row level security;
 alter table public.website_audit enable row level security;
 alter table public.website_rate_limits enable row level security;
-create policy public_posts on public.blog_posts for select to anon,authenticated using(status='published' and published_at <= now());
-create policy editor_posts on public.blog_posts for select to authenticated using(public.cms_is_editor());
+create policy public_posts on public.website_posts for select to anon,authenticated using(status='published' and published_at <= now());
+create policy editor_posts on public.website_posts for select to authenticated using(public.cms_is_editor());
 create policy public_content on public.website_content for select to anon,authenticated using(true);
 create policy public_media on public.website_media for select to anon,authenticated using(is_public);
 create policy editor_events on public.events for select to authenticated using(public.cms_is_editor());
@@ -60,12 +60,12 @@ do $$ declare item record; begin
   end loop;
 end $$;
 create policy editor_registrations on public.event_registrations for select to authenticated using(public.cms_is_editor());
-revoke all on public.website_editors,public.blog_posts,public.website_content,public.website_media,public.website_audit,public.website_rate_limits from anon,authenticated;
+revoke all on public.website_editors,public.website_posts,public.website_content,public.website_media,public.website_audit,public.website_rate_limits from anon,authenticated;
 revoke insert,update,delete on public.events from anon,authenticated;
 revoke all on public.event_registrations from anon,authenticated;
-grant select on public.blog_posts,public.website_content,public.website_media to anon,authenticated;
+grant select on public.website_posts,public.website_content,public.website_media to anon,authenticated;
 grant select on public.website_editors,public.website_audit,public.events,public.event_registrations to authenticated;
-grant all on public.website_editors,public.blog_posts,public.website_content,public.website_media,public.website_audit,public.website_rate_limits to service_role;
+grant all on public.website_editors,public.website_posts,public.website_content,public.website_media,public.website_audit,public.website_rate_limits to service_role;
 grant usage,select on all sequences in schema public to service_role;
 
 -- keep plain addresses intact; multiple locations use a json array.
@@ -86,13 +86,13 @@ begin
   if expected_version < 0 or expected_version is null then raise exception 'Invalid version' using errcode='22023'; end if;
   perform pg_advisory_xact_lock(hashtextextended(collection_name || ':' || record_id,0));
   if collection_name = 'posts' then
-    select version,published_at into old_version,old_published from public.blog_posts where id=record_id::uuid for update;
+    select version,published_at into old_version,old_published from public.website_posts where id=record_id::uuid for update;
     if coalesce(old_version,0) <> expected_version then raise exception 'Version conflict' using errcode='40001'; end if;
-    insert into public.blog_posts(id,slug,title,excerpt,body,category,author,cover_url,cover_alt,status,featured,version,published_at)
+    insert into public.website_posts(id,slug,title,excerpt,body,category,author,cover_url,cover_alt,status,featured,version,published_at)
     values(record_id::uuid,payload->>'slug',payload->>'title',payload->>'excerpt',payload->>'body',payload->>'category',payload->>'author',payload->>'cover_url',payload->>'cover_alt',payload->>'status',(payload->>'featured')::boolean,expected_version+1,
       case when payload->>'status'='published' then coalesce(old_published,now()) else old_published end)
     on conflict(id) do update set slug=excluded.slug,title=excluded.title,excerpt=excluded.excerpt,body=excluded.body,category=excluded.category,author=excluded.author,cover_url=excluded.cover_url,cover_alt=excluded.cover_alt,status=excluded.status,featured=excluded.featured,version=excluded.version,published_at=excluded.published_at,updated_at=now()
-    returning to_jsonb(blog_posts) into result;
+    returning to_jsonb(website_posts) into result;
   elsif collection_name = 'events' then
     select version into old_version from public.events where id=record_id for update;
     if coalesce(old_version,0) <> expected_version then raise exception 'Version conflict' using errcode='40001'; end if;
@@ -140,18 +140,18 @@ end $$;
 revoke all on function public.cms_rate_limit(text,integer,integer) from public;
 grant execute on function public.cms_rate_limit(text,integer,integer) to service_role;
 create function public.cms_public_categories() returns jsonb language sql stable set search_path = '' as $$
-  select coalesce(jsonb_agg(category order by category),'[]'::jsonb) from (select distinct category from public.blog_posts where status='published' and published_at<=now()) categories;
+  select coalesce(jsonb_agg(category order by category),'[]'::jsonb) from (select distinct category from public.website_posts where status='published' and published_at<=now()) categories;
 $$;
 grant execute on function public.cms_public_categories() to anon,authenticated;
 create function public.cms_overview() returns jsonb language plpgsql stable security definer set search_path = '' as $$
 begin
   if not public.cms_is_editor() then raise exception 'Editor access required' using errcode='42501'; end if;
   return jsonb_build_object(
-    'published_posts',(select count(*) from public.blog_posts where status='published'),
-    'draft_posts',(select count(*) from public.blog_posts where status='draft'),
+    'published_posts',(select count(*) from public.website_posts where status='published'),
+    'draft_posts',(select count(*) from public.website_posts where status='draft'),
     'active_events',(select count(*) from public.events where is_active),
     'registrations',(select count(*) from public.event_registrations where status='confirmed'),
-    'recent_posts',(select coalesce(jsonb_agg(to_jsonb(recent)),'[]'::jsonb) from (select * from public.blog_posts order by updated_at desc limit 5) recent));
+    'recent_posts',(select coalesce(jsonb_agg(to_jsonb(recent)),'[]'::jsonb) from (select * from public.website_posts order by updated_at desc limit 5) recent));
 end $$;
 revoke all on function public.cms_overview() from public;
 grant execute on function public.cms_overview() to authenticated;

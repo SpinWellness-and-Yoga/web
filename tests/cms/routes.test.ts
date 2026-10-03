@@ -49,7 +49,7 @@ test('Admin routes check provider identity and database membership before saving
       writes++;
       if(conflict){body={code:'40001',message:'Version conflict'};status=400;}
       else { const payload=JSON.parse(String(init?.body));body={...payload.payload,id:payload.record_id,version:payload.expected_version+1}; }
-    }else if(url.pathname==='/rest/v1/blog_posts')body=[{...draft,id:userId,version:1}];
+    }else if(url.pathname==='/rest/v1/website_posts')body=[{...draft,id:userId,version:1}];
     return new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json'}});
   };
   const request=(method:string,body?:unknown)=>new Request(`${origin}/api/admin/posts`,{method,headers:{origin,'content-type':'application/json',cookie:`${SESSION_COOKIE}=${identity}`},...(body?{body:JSON.stringify(body)}:{})});

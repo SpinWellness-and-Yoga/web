@@ -26,7 +26,7 @@ export function listRange(request: Request) {
 }
 export async function listRecords(request: Request, kind: Collection, id?: string) {
   const { client } = await adminContext(request);
-  const table = kind === 'posts' ? 'blog_posts' : 'events';
+  const table = kind === 'posts' ? 'website_posts' : 'events';
   const range = listRange(request);
   let query = client.from(table).select(kind === 'events' ? '*,event_registrations(count)' : '*').order('updated_at', { ascending: false }).order('id').range(range.start, range.end);
   if (id) query = query.eq('id', identifier.parse(id));

@@ -54,3 +54,6 @@ wrangler.toml
 
 # generated website media worker configuration
 /wrangler.cms.json
+
+# supabase cli
+supabase/.temp/

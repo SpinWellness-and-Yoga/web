@@ -5,7 +5,7 @@ import type { ContentKey, ContentValues, Post } from './types';
 export async function getPublishedPosts(input: { query?: string; category?: string; page?: number } = {}) {
   const client = cmsClient();
   const page = Math.max(1, Math.min(10000, Math.floor(input.page || 1)));
-  let query = client.from('blog_posts').select('*', { count: 'exact' }).eq('status', 'published').lte('published_at', new Date().toISOString());
+  let query = client.from('website_posts').select('*', { count: 'exact' }).eq('status', 'published').lte('published_at', new Date().toISOString());
   if (input.category) query = query.eq('category', input.category.slice(0, 80));
   if (input.query) query = query.ilike('title', `%${input.query.slice(0, 100).replace(/[%_\\]/g, '')}%`);
   const [result, categories] = await Promise.all([
@@ -16,7 +16,7 @@ export async function getPublishedPosts(input: { query?: string; category?: stri
   return { posts: result.data as Post[], total: result.count || 0, categories: categories.data as string[] };
 }
 export async function getPublishedPost(slug: string): Promise<Post | null> {
-  const { data, error } = await cmsClient().from('blog_posts').select('*').eq('slug', slug).eq('status', 'published').lte('published_at', new Date().toISOString()).maybeSingle();
+  const { data, error } = await cmsClient().from('website_posts').select('*').eq('slug', slug).eq('status', 'published').lte('published_at', new Date().toISOString()).maybeSingle();
   if (error) throw new CmsError(503, 'Journal is unavailable.');
   return data as Post | null;
 }
