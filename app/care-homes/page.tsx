@@ -127,7 +127,7 @@ export default function CareHomesPage() {
               <article key={service.title} className={styles.serviceCard}>
                 <h3>{service.title}</h3>
                 <p>{service.description}</p>
-                <ul>
+                <ul className="sway-bullets">
                   {service.features.map((feature) => (
                     <li key={feature}>{feature}</li>
                   ))}

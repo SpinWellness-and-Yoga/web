@@ -5,6 +5,7 @@ import LatestPosts from "./blog/_components/LatestPosts";
 import Link from "next/link";
 import Navbar from "./_components/Navbar";
 import WaitlistCard from "./_components/WaitlistCard";
+import SwaySun from "./_components/SwaySun";
 import { BuildingIcon, LightningIcon, HeartIcon, PlantIcon } from "./_components/Icons";
 import styles from "./page.module.css";
 
@@ -32,6 +33,7 @@ export default async function Home() {
 
       <main id="top" className={styles.main}>
         <section className={styles.hero}>
+          <SwaySun className={styles.heroSun} />
           <div className={styles.heroContent}>
             <div className={styles.heroCopy}>
               <span className={styles.kicker}>Transforming Employee Wellness</span>
@@ -90,7 +92,7 @@ export default async function Home() {
           </header>
           <div className={styles.serviceGrid}>
             {services.map((service) => (
-              <article key={service.title} className={styles.serviceCard}>
+              <article key={service.title} className={`${styles.serviceCard} reveal`}>
                 {service.image && <Image src={service.image} alt={service.image_alt || ""} width={640} height={400} unoptimized className={styles.serviceImage} />}
                 <h3>{service.title}</h3>
                 <p>{service.copy}</p>
@@ -110,19 +112,19 @@ export default async function Home() {
               </p>
             </header>
             <ul className={styles.benefitList}>
-              <li>
+              <li className="reveal">
                 <strong>Stress melts away</strong>
                 <span>Employees experience calmer nervous systems and sustainable energy.</span>
               </li>
-              <li>
+              <li className="reveal">
                 <strong>Productivity with compassion</strong>
                 <span>Our rituals align wellbeing with focus, helping teams deliver without burnout.</span>
               </li>
-              <li>
+              <li className="reveal">
                 <strong>Culture you can feel</strong>
                 <span>From onboarding kits to manager playbooks, wellbeing becomes a lived value.</span>
               </li>
-              <li>
+              <li className="reveal">
                 <strong>Made for every team size</strong>
                 <span>Flexible plans that scale from startups to enterprise hubs.</span>
               </li>
@@ -130,7 +132,8 @@ export default async function Home() {
           </div>
           <div className={styles.statColumn}>
             {stats.map((stat) => (
-              <div key={stat.label} className={styles.statCard}>
+              <div key={stat.label} className={`${styles.statCard} reveal`}>
+                <SwaySun className={styles.statSun} />
                 <span className={styles.statValue}>{stat.value}</span>
                 <span className={styles.statLabel}>{stat.label}</span>
               </div>
@@ -140,7 +143,8 @@ export default async function Home() {
 
         <LatestPosts />
 
-        <section className={styles.ctaSection} id="waitlist">
+        <section className={`${styles.ctaSection} sway-pattern reveal`} id="waitlist">
+          <SwaySun className={styles.ctaSun} />
           <h2>Transform how your teams experience workplace wellness.</h2>
           <p>
             Be among the first to access holistic employee wellbeing programs designed for modern workplaces.
@@ -151,9 +155,10 @@ export default async function Home() {
         </section>
       </main>
 
-      <footer className={styles.footer}>
+      <footer className={`${styles.footer} sway-pattern`}>
         <div className={styles.footerInner}>
           <div className={styles.footerBrand}>
+            <SwaySun className={styles.footerSun} />
             <p>Spinwellness & Yoga — wellness, therapy, and culture design for modern teams.</p>
           </div>
           <div className={styles.footerMeta}>

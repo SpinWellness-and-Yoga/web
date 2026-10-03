@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import SwaySun from './SwaySun';
 import styles from '../page.module.css';
 
 type NavbarProps = {
@@ -113,7 +114,7 @@ export default function Navbar({ className }: NavbarProps) {
       className={`${styles.navbar} ${(isScrollingDown && !mobileMenuOpen) ? styles.hidden : ''} ${className ?? ''}`}
     >
       <div className={styles.navInner}>
-        <Link href="/" className={styles.brandText} aria-label="Spinwellness home">Home</Link>
+        <Link href="/" className={styles.brandText} aria-label="Spinwellness home"><SwaySun className={styles.brandSun} />Spinwellness <span>&amp; Yoga</span></Link>
 
         <nav className={styles.navLinks} aria-label="Primary">
           <Link href="/#services">Services</Link>

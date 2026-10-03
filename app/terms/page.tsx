@@ -16,7 +16,7 @@ export default function TermsPage() {
         </p>
 
         <h2 style={{ color: '#151B47', marginTop: '2rem' }}>yoga & fitness waiver</h2>
-        <ul style={{ color: '#322216', lineHeight: 1.8 }}>
+        <ul className="sway-bullets" style={{ color: '#322216', lineHeight: 1.8 }}>
           <li>
             you understand that yoga, fitness, breathwork, and related activities involve physical exertion and carry
             inherent risks (including injury).
@@ -35,7 +35,7 @@ export default function TermsPage() {
         </ul>
 
         <h2 style={{ color: '#151B47', marginTop: '2rem' }}>photo & media release</h2>
-        <ul style={{ color: '#322216', lineHeight: 1.8 }}>
+        <ul className="sway-bullets" style={{ color: '#322216', lineHeight: 1.8 }}>
           <li>
             you consent to being photographed and/or recorded during the event.
           </li>
@@ -47,7 +47,7 @@ export default function TermsPage() {
         </ul>
 
         <h2 style={{ color: '#151B47', marginTop: '2rem' }}>general</h2>
-        <ul style={{ color: '#322216', lineHeight: 1.8 }}>
+        <ul className="sway-bullets" style={{ color: '#322216', lineHeight: 1.8 }}>
           <li>you agree to follow facilitator instructions and respect other participants.</li>
           <li>spinwellness & yoga may update these terms from time to time.</li>
         </ul>

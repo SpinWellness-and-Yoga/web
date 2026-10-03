@@ -24,7 +24,7 @@ export default async function TeamPage() {
 
           <div className={styles.teamGrid}>
             {teamMembers.map((member, index) => (
-              <article key={member.name} className={styles.teamCard}>
+              <article key={member.name} className={`${styles.teamCard} reveal`}>
                 <div className={styles.cardContent}>
                   {member.image ? (
                     <div className={styles.imageWrapper}>

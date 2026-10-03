@@ -19,7 +19,7 @@ export function PostMeta({ post }: { post: Post }) {
 }
 
 export default function PostCard({ post }: { post: Post }) {
-  return <article className={styles.card}>
+  return <article className={`${styles.card} reveal`}>
     <Link href={`/blog/${post.slug}`} aria-label={`Read ${post.title}`}><PostCover post={post} /></Link>
     <span className={styles.eyebrow}>{post.category}</span>
     <h2><Link href={`/blog/${post.slug}`}>{post.title}</Link></h2>

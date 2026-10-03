@@ -855,3 +855,26 @@
 .navbar { background: #fdf7f1f5; backdrop-filter: blur(12px); border-bottom: 1px solid #e4ded3; }
 .navInner { min-height: 80px; }
 @media (max-width: 480px) { .brandText { font-size: .95rem; } }
+
+/* sway motion assets */
+.brandText { display: inline-flex; align-items: center; gap: 0.6rem; }
+.brandText .brandSun { width: 44px; color: #19352b; }
+.hero { position: relative; }
+.hero .heroSun { position: absolute; width: clamp(240px, 32vw, 440px); left: 24%; top: -3rem; opacity: 0.12; z-index: 0; }
+@media (max-width: 739px) { .hero .heroSun { left: auto; right: 4%; top: -1rem; width: 200px; } }
+.heroContent { position: relative; z-index: 1; }
+.statCard { position: relative; overflow: hidden; justify-content: center; padding: 2rem 1.75rem; gap: 0.5rem; }
+.statValue { font-size: clamp(2.75rem, 6vw, 4rem); font-weight: 600; letter-spacing: -0.03em; }
+.statCard .statSun { position: absolute; width: 220px; right: -50px; bottom: -60px; color: var(--color-coral); opacity: 0.22; }
+.ctaSection.ctaSection { position: relative; overflow: hidden; border: 0; box-shadow: 0 24px 60px rgba(9, 25, 68, 0.28); }
+.ctaSection.ctaSection h2 { color: #fdf7f1; }
+.ctaSection.ctaSection p { color: rgba(253, 247, 241, 0.82); }
+.ctaSection .ctaSun { width: 84px; margin: 0 auto 1.25rem; color: #fdf7f1; }
+.ctaSection .ctaButton { background: #fdf7f1; color: #091944; }
+.footer.footer { border-top: 0; }
+.footer .footerInner { color: rgba(253, 247, 241, 0.8); }
+.footer .footerSun { width: 64px; color: #fdf7f1; margin-bottom: 0.75rem; }
+.serviceCard:hover, .statCard:hover { transform: translateY(-4px); }
+.benefitList li { position: relative; padding-left: 3.6rem; transition: transform 0.25s ease, box-shadow 0.25s ease; }
+.benefitList li::before { content: ''; position: absolute; left: 1.1rem; top: 1.2rem; width: 1.7rem; height: 1.7rem; background: var(--color-coral); -webkit-mask: url(/brand/sway-sun.webp) center / contain no-repeat; mask: url(/brand/sway-sun.webp) center / contain no-repeat; }
+.benefitList li:hover { transform: translateX(4px); box-shadow: 0 10px 26px rgba(9, 25, 68, 0.08); }

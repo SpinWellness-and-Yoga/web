@@ -1,0 +1,24 @@
+/* the brand sun, split at its ring so the rays can move while the figure stays still. */
+.sun { position: relative; display: block; aspect-ratio: 1; color: var(--color-evergreen); pointer-events: none; }
+.rays, .core {
+  position: absolute; inset: 0; background: currentColor;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center; mask-position: center;
+  -webkit-mask-size: contain; mask-size: contain;
+  -webkit-mask-composite: source-in; mask-composite: intersect;
+}
+.rays {
+  -webkit-mask-image: url(/brand/sway-sun.webp), radial-gradient(circle closest-side at 50% 51.7%, transparent 43.4%, #000 43.6%);
+  mask-image: url(/brand/sway-sun.webp), radial-gradient(circle closest-side at 50% 51.7%, transparent 43.4%, #000 43.6%);
+  transform-origin: 50% 51.7%;
+  animation: sway 12s ease-in-out infinite alternate;
+}
+.core {
+  -webkit-mask-image: url(/brand/sway-sun.webp), radial-gradient(circle closest-side at 50% 51.7%, #000 43.4%, transparent 43.6%);
+  mask-image: url(/brand/sway-sun.webp), radial-gradient(circle closest-side at 50% 51.7%, #000 43.4%, transparent 43.6%);
+}
+@keyframes sway {
+  from { transform: rotate(-9deg) scale(0.97); }
+  to { transform: rotate(9deg) scale(1.03); }
+}
+@media (prefers-reduced-motion: reduce) { .rays { animation: none; } }
