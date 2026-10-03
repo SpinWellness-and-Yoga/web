@@ -75,15 +75,16 @@ export default function Login() {
         {sent && (
           <>
             <p className="notice">
-              Check your inbox. Click the link in your email, or enter your sign-in code below.
+              Check your inbox. Enter the sign-in code from your email.
             </p>
             <label>
-              Sign-in code or link
+              Sign-in code
               <input
                 autoComplete="one-time-code"
                 required
+                inputMode="numeric"
                 value={token}
-                placeholder="6-digit code or paste sign-in link"
+                placeholder="6-digit code"
                 onChange={(event) => setToken(event.target.value)}
               />
             </label>
@@ -95,7 +96,7 @@ export default function Login() {
           </p>
         )}
         <button disabled={busy} className="button primary">
-          {busy ? 'Please wait…' : sent ? 'Sign in' : 'Send sign-in link'}
+          {busy ? 'Please wait…' : sent ? 'Sign in' : 'Send sign-in code'}
         </button>
         {sent && (
           <button
@@ -107,7 +108,7 @@ export default function Login() {
               setToken('');
             }}
           >
-            Use another email or request a new link
+            Use another email or request a new code
           </button>
         )}
       </form>

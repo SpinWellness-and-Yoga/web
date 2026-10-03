@@ -2,6 +2,19 @@ import { cmsClient } from './client';
 import { consumeRateLimit, SESSION_COOKIE } from './auth';
 import { assertSameOrigin, CmsError, json, readJson } from './http';
 import { emailSchema, verifySchema } from './validation';
+async function sendCode(email: string, code: string) {
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: { 'api-key': process.env.BREVO_API_KEY || '', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      sender: { name: 'Spinwellness & Yoga', email: process.env.CMS_SENDER_EMAIL || 'admin@spinwellnessandyoga.com' },
+      to: [{ email }],
+      subject: `${code} is your Spinwellness sign-in code`,
+      textContent: `Your Spinwellness content studio sign-in code is ${code}. It expires soon. Ignore this email if you did not request it.`,
+    }),
+  });
+  if (!response.ok) throw new CmsError(503, 'Sign-in is unavailable.');
+}
 export async function requestCode(request: Request) {
   assertSameOrigin(request);
   const { email } = emailSchema.parse(await readJson(request));
@@ -13,17 +26,13 @@ export async function requestCode(request: Request) {
     .eq('email', email)
     .maybeSingle();
   if (allowed.data) {
-    const siteUrl = process.env.CMS_SITE_URL || 'https://spinwellness.org';
-    const { error } = await cmsClient().auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: false,
-        emailRedirectTo: `${siteUrl}/admin/login`,
-      },
-    });
-    if (error && error.status && error.status >= 500) throw new CmsError(503, 'Sign-in is unavailable.');
+    // the auth project is shared, so its email template and site address belong to another product.
+    const { data, error } = await cmsClient(true).auth.admin.generateLink({ type: 'magiclink', email });
+    const code = data?.properties?.email_otp;
+    if (error || !code) throw new CmsError(503, 'Sign-in is unavailable.');
+    await sendCode(email, code);
   }
-  return json({ message: 'If your account has access, a sign-in link or code will arrive by email.' });
+  return json({ message: 'If your account has access, a sign-in code will arrive by email.' });
 }
 export async function verifyCode(request: Request) {
   assertSameOrigin(request);
