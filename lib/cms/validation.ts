@@ -24,4 +24,6 @@ export const contentKeySchema = z.enum(['homepage', 'services', 'team', 'faq', '
 export const versionSchema = z.number().int().min(0);
 export const emailSchema = z.object({ email: z.email().max(254).transform(value => value.toLowerCase()) }).strict();
 const otpCodeSchema = z.string().regex(/^\d{6,8}$/);
-export const verifySchema = emailSchema.extend({ token: otpCodeSchema });
+export const verifyOtpSchema = emailSchema.extend({ token: otpCodeSchema });
+export const verifyTokenSchema = z.object({ accessToken: z.string().min(20).max(4096) }).strict();
+export const verifySchema = z.union([verifyOtpSchema, verifyTokenSchema]);
