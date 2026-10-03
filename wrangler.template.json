@@ -1,6 +1,6 @@
 {
   "main": ".open-next/worker.js",
-  "name": "webapp",
+  "name": "spinwellness-web",
   "compatibility_date": "2025-03-25",
   "compatibility_flags": [
     "nodejs_compat"
@@ -9,13 +9,6 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  "d1_databases": [
-    {
-      "binding": "DATABASE",
-      "database_name": "spinwellness_web",
-      "database_id": "812db10b-8e64-4025-8052-1d3d6e0d8c79"
-    }
-  ],
   "observability": {
     "enabled": true
   },
