@@ -19,7 +19,7 @@ The migration script is at `web/database/migrations/20261001_website_cms.sql`.
 
 It configures:
 - `website_editors` table with row level security.
-- `blog_posts` table with status checks and public read policies.
+- `website_posts` table with status checks and public read policies.
 - `website_content` table with JSON schema and size validation.
 - `website_media` table tracking private R2 objects.
 - `website_audit` table recording editor actions.
