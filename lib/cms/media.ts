@@ -3,7 +3,8 @@ import { imageSize } from 'image-size';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { z } from 'zod';
 import { adminContext, databaseError } from './operations';
-import { CmsError, readBytes } from './http';
+import { CmsError, readBytes, readJson } from './http';
+import { mediaCategorySchema } from './validation';
 export interface MediaBucket {
   put(key: string, value: ArrayBuffer, options: { httpMetadata: { contentType: string } }): Promise<unknown>;
   get(key: string): Promise<{ body: ReadableStream; size: number; httpEtag: string } | null>;
@@ -43,6 +44,7 @@ export async function uploadMedia(request: Request) {
   const form = await new Response(body as BodyInit, { headers: { 'Content-Type': request.headers.get('content-type') || '' } }).formData();
   const file = form.get('file');
   const alt = z.string().trim().min(1).max(240).parse(form.get('alt'));
+  const category = mediaCategorySchema.parse(form.get('category') ?? 'general');
   if (!(file instanceof File)) throw new CmsError(400, 'Select an image.');
   const bytes = await file.arrayBuffer();
   const extension = inspectImage(new Uint8Array(bytes), file.type);
@@ -50,7 +52,7 @@ export async function uploadMedia(request: Request) {
   const key = `${id}.${extension}`;
   const bucket = mediaBucket();
   await bucket.put(key, bytes, { httpMetadata: { contentType: file.type } });
-  const { data, error } = await client.rpc('cms_add_media', { media_id: id, object_key: key, media_name: file.name.slice(0,180), media_alt: alt, mime_type: file.type, byte_size: bytes.byteLength });
+  const { data, error } = await client.rpc('cms_add_media', { media_id: id, object_key: key, media_name: file.name.slice(0,180), media_alt: alt, mime_type: file.type, byte_size: bytes.byteLength, media_category: category });
   if (!error && data) return data;
   // only explicit transaction rejections prove that metadata did not commit.
   if (error && ['42501', '22023', '23514', '23502'].includes(error.code)) {
@@ -61,4 +63,11 @@ export async function uploadMedia(request: Request) {
   const saved = await client.from('website_media').select('*').eq('id', id).eq('object_key', key).maybeSingle();
   if (!saved.error && saved.data) return saved.data;
   throw new CmsError(503, 'Upload could not be confirmed. Check the media library before trying again.');
+}
+export async function setMediaCategory(request: Request, id: string) {
+  const { client } = await adminContext(request);
+  const { category } = z.object({ category: mediaCategorySchema }).strict().parse(await readJson(request));
+  const { data, error } = await client.rpc('cms_set_media_category', { media_id: z.uuid().parse(id), media_category: category });
+  databaseError(error);
+  return data;
 }

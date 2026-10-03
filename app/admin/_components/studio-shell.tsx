@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, RequestError } from './api';
-const links = [['/admin', 'Overview'], ['/admin/posts', 'Blog posts'], ['/admin/events', 'Events'], ['/admin/content', 'Website content'], ['/admin/media', 'Media']];
+const links = [['/admin', 'Overview'], ['/admin/posts', 'Blog posts'], ['/admin/events', 'Events'], ['/admin/content', 'Website content'], ['/admin/media', 'Media'], ['/admin/drive', 'Drive']];
 export default function StudioShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname(); const router = useRouter(); const login = pathname === '/admin/login';
   const [verifiedPath, setVerifiedPath] = useState(''); const ready = verifiedPath === pathname; const [error, setError] = useState(''); const [attempt, setAttempt] = useState(0);

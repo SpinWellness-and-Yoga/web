@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MEDIA_CATEGORIES, type MediaCategory } from './types';
 const text = (max: number) => z.string().trim().min(1).max(max);
 export const imageUrl = z.string().max(2048).refine(value => !value || /^\/(?!\/)[^\\]*$/.test(value) || /^https:\/\/[^\s]+$/.test(value));
 export const identifier = z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/);
@@ -27,3 +28,4 @@ const otpCodeSchema = z.string().regex(/^\d{6,8}$/);
 export const verifyOtpSchema = emailSchema.extend({ token: otpCodeSchema });
 export const verifyTokenSchema = z.object({ accessToken: z.string().min(20).max(4096) }).strict();
 export const verifySchema = z.union([verifyOtpSchema, verifyTokenSchema]);
+export const mediaCategorySchema = z.enum(Object.keys(MEDIA_CATEGORIES) as [MediaCategory, ...MediaCategory[]]);

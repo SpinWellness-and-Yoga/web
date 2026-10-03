@@ -23,6 +23,8 @@ async function database(locationType: 'text' | 'jsonb' = 'text') {
     grant select on public.event_registrations to anon;
   `);
   await db.exec(await readFile(new URL('../../database/migrations/20261001_website_cms.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('../../database/migrations/20261004_media_categories.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('../../database/migrations/20261005_drive.sql', import.meta.url), 'utf8'));
   await db.query('insert into auth.users(id) values ($1),($2)', [editorId, outsiderId]);
   await db.query('insert into public.website_editors(user_id) values ($1)', [editorId]);
   return db;
@@ -176,4 +178,34 @@ test('event edits preserve plain JSONB location strings', async () => {
     const result = await db.query<{ locations: string }>("select locations from public.events where id='scalar'");
     assert.equal(result.rows[0].locations, 'Studio, London');
   } finally { await db.close(); }
+});
+test('Media categories default to general and only editors can change them', async () => {
+  const db = await database();
+  const mediaId = '00000000-0000-4000-8000-000000000009';
+  const add = (category?: string) => db.query<{ result: { category: string } }>(`select public.cms_add_media($1,$2,'a.png','Alt','image/png',10${category ? ',$3' : ''}) as result`, category ? [mediaId, `${mediaId}.png`, category] : [mediaId, `${mediaId}.png`]);
+  await identity(db, 'authenticated', editorId);
+  assert.equal((await add()).rows[0].result.category, 'general');
+  const moved = await db.query<{ result: { category: string } }>('select public.cms_set_media_category($1,$2) as result', [mediaId, 'tutorials']);
+  assert.equal(moved.rows[0].result.category, 'tutorials');
+  await assert.rejects(db.query('select public.cms_set_media_category($1,$2)', [mediaId, 'Not Valid']));
+  await assert.rejects(db.query('select public.cms_set_media_category($1,$2)', [outsiderId, 'social']));
+  await identity(db, 'authenticated', outsiderId);
+  await assert.rejects(db.query('select public.cms_set_media_category($1,$2)', [mediaId, 'social']));
+  await db.close();
+});
+test('Drive tables accept 10 GB files and reject browser roles', async () => {
+  const db = await database();
+  const fileId = '00000000-0000-4000-8000-00000000000a';
+  const insert = (size: number) => db.query("insert into public.drive_files(id,name,object_key,content_type,size) values($1,'a.mp4',$2,'video/mp4',$3)", [fileId, `drive/${fileId}`, size]);
+  await assert.rejects(insert(10737418241));
+  await insert(10737418240);
+  assert.equal(Number((await db.query<{ used: string }>('select public.drive_usage() as used')).rows[0].used), 10737418240);
+  assert.equal((await db.query('select 1 from public.drive_folders where parent_id is null')).rows.length, 4);
+  await assert.rejects(db.query("insert into public.drive_folders(name) values('brand')"));
+  await assert.rejects(db.query("delete from public.drive_folders where name='Brand' and exists(select 1 from (update public.drive_files set folder_id=(select id from public.drive_folders where name='Brand') returning 1) x)"));
+  for (const role of ['anon', 'authenticated']) {
+    await identity(db, role, editorId);
+    await assert.rejects(db.query('select 1 from public.drive_files'));
+    await assert.rejects(db.query('select public.drive_usage()'));
+  }
 });

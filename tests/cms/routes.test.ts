@@ -93,6 +93,7 @@ test('Media upload validates files and rolls back storage on database failure', 
   (globalThis as any)[cfSymbol] = { env: { CMS_MEDIA: mockBucket } };
 
   let failRpc: 'none' | 'rejected' | 'committed' | 'unknown' = 'none';
+  const categories: string[] = [];
   let savedMedia: Record<string, unknown> | null = null;
   process.env.CMS_SITE_URL = origin;
   process.env.NEXT_PUBLIC_SUPABASE_URL = provider;
@@ -116,6 +117,7 @@ test('Media upload validates files and rolls back storage on database failure', 
         return new Response(JSON.stringify({ code: '42501', message: 'Database failure' }), { status: 400, headers: { 'content-type': 'application/json' } });
       }
       const payload = JSON.parse(String(init?.body));
+      categories.push(payload.media_category);
       if (failRpc === 'committed' || failRpc === 'unknown') {
         savedMedia = failRpc === 'committed' ? { id: payload.media_id, object_key: payload.object_key, url: `/api/media/${payload.object_key}` } : null;
         throw new Error('Response lost');
@@ -127,8 +129,9 @@ test('Media upload validates files and rolls back storage on database failure', 
   };
 
   const png1x1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
-  const makeRequest = () => {
+  const makeRequest = (category?: string) => {
     const formData = new FormData();
+    if (category) formData.append('category', category);
     formData.append('file', new File([png1x1], 'test.png', { type: 'image/png' }));
     formData.append('alt', 'Test image description');
     return new Request(`${origin}/api/admin/media`, {
@@ -147,22 +150,27 @@ test('Media upload validates files and rolls back storage on database failure', 
     assert.equal(puts.length, 1);
     assert.equal(deletes.length, 0);
 
+    assert.deepEqual(categories, ['general']);
+    assert.equal((await uploadMedia(makeRequest('tutorials'))).status, 201);
+    assert.equal(categories[1], 'tutorials');
+    assert.equal((await uploadMedia(makeRequest('unknown-category'))).status, 400);
+    assert.equal(puts.length, 2);
     failRpc = 'rejected';
     const res2 = await uploadMedia(makeRequest());
     assert.equal(res2.status, 403);
-    assert.equal(puts.length, 2);
+    assert.equal(puts.length, 3);
     assert.equal(deletes.length, 1);
-    assert.equal(deletes[0], puts[1].key);
+    assert.equal(deletes[0], puts[2].key);
     failRpc = 'committed';
     const recovered = await uploadMedia(makeRequest());
     assert.equal(recovered.status, 201);
     assert.equal(deletes.length, 1);
-    assert.equal((await recovered.json()).data.object_key, puts[2].key);
+    assert.equal((await recovered.json()).data.object_key, puts[3].key);
     failRpc = 'unknown';
     const uncertain = await uploadMedia(makeRequest());
     assert.equal(uncertain.status, 503);
     assert.equal(deletes.length, 1);
-    assert.equal(puts.length, 4);
+    assert.equal(puts.length, 5);
   } finally {
     globalThis.fetch = originalFetch;
     if (originalCf !== undefined) (globalThis as any)[cfSymbol] = originalCf; else delete (globalThis as any)[cfSymbol];

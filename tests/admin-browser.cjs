@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
  const stamp='2026-10-01T10:00:00Z';
  const post={id:'post-one',title:'A quiet morning',slug:'quiet-morning',excerpt:'A calm start.',body:'Pause and breathe.',category:'Wellbeing',author:'Sway team',cover_url:'',cover_alt:'',status:'draft',featured:false,version:3,published_at:null,created_at:stamp,updated_at:stamp};
  const event={id:'morning-yoga',name:'Morning yoga',description:'A gentle practice.',image_url:null,start_date:'2026-11-01T10:00:00Z',end_date:'2026-11-01T11:00:00Z',location:'Lagos',venue:'Studio',capacity:20,price:0,is_active:false,locations:null,version:2,created_at:stamp,updated_at:stamp,registration_count:3};
- const asset={id:'image-one',url:'/brand/sway-wordmark.png',alt:'Sway wordmark',name:'brand.png',created_at:stamp};
+ const asset={id:'image-one',url:'/brand/sway-wordmark.png',alt:'Sway wordmark',name:'brand.png',category:'general',created_at:stamp};
  let writes=[];let failSave=false;let denySession=false;
  await page.route('**/api/admin/**',async route=>{
   const request=route.request();const url=new URL(request.url());const path=url.pathname;let data;
@@ -24,12 +24,13 @@ const assert = require('node:assert/strict');
   else if(path.endsWith('/events'))data=[event];
   else if(path.includes('/events/'))data=event;
   else if(path.endsWith('/media'))data=[asset];
+  else if(path.endsWith('/drive'))data={folder:null,folders:[{id:'f1',name:'Digital products',parent_id:null}],files:[{id:'d1',folder_id:null,name:'A long file name for a yoga tutorial video.mp4',content_type:'video/mp4',size:9000000000,visibility:'private',share_token:null,created_at:stamp}],usage:9000000000,limit:107374182400,can_write:true};
   else if(path.includes('/content/'))data={key:path.split('/').pop(),value:null,version:0,updated_at:null};
   else throw new Error(`Unexpected path ${path}`);
   return route.fulfill({json:{data}});
  });
  page.on('dialog',dialog=>dialog.accept());
- for(const path of ['/admin','/admin/posts','/admin/posts/new','/admin/posts/post-one','/admin/events','/admin/events/new','/admin/events/morning-yoga','/admin/content','/admin/media']){
+ for(const path of ['/admin','/admin/posts','/admin/posts/new','/admin/posts/post-one','/admin/events','/admin/events/new','/admin/events/morning-yoga','/admin/content','/admin/media','/admin/drive']){
   await page.goto('http://localhost:3011'+path);await page.locator('.studio-main').waitFor();await page.waitForTimeout(150);
   assert.equal(await page.getByText('View website',{exact:true}).count(),0);
   await page.screenshot({path:`/private/tmp/sway-admin-${path.split('/').filter(Boolean).join('-')}.png`,fullPage:true});
@@ -50,7 +51,7 @@ const assert = require('node:assert/strict');
  function luminance(color){return color.match(/\d+/g).slice(0,3).map(Number).map(v=>v/255).map(v=>v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4)).reduce((sum,v,i)=>sum+v*[0.2126,0.7152,0.0722][i],0)}
  const contrast=(luminance(navColors.color)+0.05)/(luminance(navColors.background)+0.05);assert.ok(contrast>=4.5,`Sidebar contrast ${contrast}`);console.log(`Sidebar contrast: ${contrast.toFixed(2)}:1`);
  await page.setViewportSize({width:360,height:800});
- for(const path of ['/admin','/admin/posts','/admin/posts/new','/admin/events','/admin/events/morning-yoga','/admin/content','/admin/media']){
+ for(const path of ['/admin','/admin/posts','/admin/posts/new','/admin/events','/admin/events/morning-yoga','/admin/content','/admin/media','/admin/drive']){
   await page.goto('http://localhost:3011'+path);await page.locator('.studio-main').waitFor();await page.waitForTimeout(150);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),`Overflow ${path}`);await page.screenshot({path:`/private/tmp/sway-admin-mobile-${path.split('/').filter(Boolean).join('-')}.png`,fullPage:true});
  }
  denySession=true;await page.goto('http://localhost:3011/admin');await page.getByRole('alert').filter({hasText:'Access denied.'}).waitFor();assert.equal(await page.locator('.studio-main').count(),0);

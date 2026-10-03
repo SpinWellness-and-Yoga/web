@@ -22,5 +22,7 @@ export interface ContentValues {
 }
 export type ContentKey = keyof ContentValues;
 export type ContentRecord<K extends ContentKey = ContentKey> = { key: K; value: ContentValues[K]; version: number; updated_at: string | null };
-export interface MediaAsset { id: string; url: string; alt: string; name: string; created_at: string }
+export const MEDIA_CATEGORIES = { general: 'General', events: 'Events', stories: 'Stories', team: 'Team', social: 'Social posts', tutorials: 'Tutorials', products: 'Digital products', brand: 'Brand' } as const;
+export type MediaCategory = keyof typeof MEDIA_CATEGORIES;
+export interface MediaAsset { id: string; url: string; alt: string; name: string; category: MediaCategory; created_at: string }
 export interface Overview { published_posts: number; draft_posts: number; active_events: number; registrations: number; recent_posts: Post[] }
