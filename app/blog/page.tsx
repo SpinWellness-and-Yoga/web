@@ -1,3 +1,4 @@
+import SwaySun from '../_components/SwaySun';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getPublishedPosts } from '@/lib/cms/public';
@@ -17,7 +18,7 @@ export default async function BlogPage({ searchParams }: Props) {
   const { posts, total, categories } = await getPublishedPosts({ query, category, page });
   const featured = !query && !category && page === 1 ? posts.find(post => post.featured) : undefined;
   return <BlogShell><main className={styles.main}>
-    <header className={styles.intro}><span className={styles.eyebrow}>The Spinwellness journal</span>
+    <header className={styles.intro}><SwaySun className="sway-heading-sun" /><span className={styles.eyebrow}>The Spinwellness journal</span>
       <h1>A little space for<br />your wellbeing.</h1><p>Ideas for a calmer workday, mindful movement, and a little more room for yourself.</p></header>
     {featured && <FeaturedPost post={featured} />}
     <BlogFilters query={query} category={category} categories={categories} />

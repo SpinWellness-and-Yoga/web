@@ -1,3 +1,4 @@
+import SwaySun from '../_components/SwaySun';
 import Navbar from '../_components/Navbar';
 import EventsList from './_components/EventsList';
 import styles from '../page.module.css';
@@ -15,6 +16,7 @@ export default async function EventsPage() {
 
       <main className={styles.main}>
         <section className={styles.hero}>
+          <SwaySun className={`${styles.heroSun} ${styles.heroSunRight}`} />
           <div className={styles.heroContent}>
             <div className={styles.heroCopy}>
               <span className={styles.kicker}>{capitalizeWords('upcoming events')}</span>

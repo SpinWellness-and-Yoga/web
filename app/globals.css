@@ -114,7 +114,7 @@ section {
   }
 }
 
-:root { --color-evergreen: #335c4e; --color-midnight: #091944; --color-ivory: #f8f5ef; --color-sand: #e9e4db; }
+:root { --color-accent: #335c4e; --color-accent-soft: #4f7d6b; --color-tint: #f1efe6; --color-evergreen: #335c4e; --color-midnight: #091944; --color-ivory: #f8f5ef; --color-sand: #e9e4db; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   main, .page-transition { animation: none; }
@@ -124,18 +124,13 @@ section {
 /* sway motion assets */
 .sway-pattern.sway-pattern {
   background: linear-gradient(#091944db, #091944db), #091944 url(/brand/sway-pattern.webp) 0 0 / 420px 592px;
-  animation: swayDrift 120s linear infinite;
+  animation: swayDrift 40s linear infinite;
   color: #fdf7f1;
 }
 @keyframes swayDrift { to { background-position: 0 0, 420px 592px; } }
 .sway-loading { min-height: 70vh; display: grid; place-content: center; justify-items: center; gap: 1rem; color: var(--color-evergreen); font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; }
 .sway-loading > span:first-child.sway-loading > span:first-child { width: 96px; }
-@keyframes swayReveal { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .reveal { animation: swayReveal linear both; animation-timeline: view(); animation-range: entry 0% entry 40%; }
-  }
-}
+.sway-heading-sun.sway-heading-sun { width: 72px; margin: 0 auto 1rem; color: var(--color-accent); }
 @media (prefers-reduced-motion: reduce) { .sway-pattern { animation: none; } }
 
 /* form controls and lists, drawn with the sway sun and colours */
@@ -161,5 +156,5 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--color-evergree
 }
 .sway-bullets { list-style: none; padding-left: 0; }
 .sway-bullets > li { position: relative; padding-left: 2rem; margin-bottom: 0.5rem; }
-.sway-bullets > li::before { content: ''; position: absolute; left: 0; top: 0.2em; width: 1.25em; height: 1.25em; background: var(--color-coral); -webkit-mask: url(/brand/sway-sun.webp) center / contain no-repeat; mask: url(/brand/sway-sun.webp) center / contain no-repeat; }
+.sway-bullets > li::before { content: ''; position: absolute; left: 0; top: 0.2em; width: 1.25em; height: 1.25em; background: var(--color-accent); -webkit-mask: url(/brand/sway-sun.webp) center / contain no-repeat; mask: url(/brand/sway-sun.webp) center / contain no-repeat; }
 @media (prefers-reduced-motion: reduce) { ::picker(select) { transition: none; } }

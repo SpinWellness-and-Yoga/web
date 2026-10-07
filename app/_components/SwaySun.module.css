@@ -8,17 +8,19 @@
   -webkit-mask-composite: source-in; mask-composite: intersect;
 }
 .rays {
-  -webkit-mask-image: url(/brand/sway-sun.webp), radial-gradient(circle closest-side at 50% 51.7%, transparent 43.4%, #000 43.6%);
-  mask-image: url(/brand/sway-sun.webp), radial-gradient(circle closest-side at 50% 51.7%, transparent 43.4%, #000 43.6%);
+  -webkit-mask-image: url(/brand/sway-sun.webp), radial-gradient(circle closest-side at 50% 51.7%, transparent 43.4%, #000 43.6%, #000 98%, transparent 99%);
+  mask-image: url(/brand/sway-sun.webp), radial-gradient(circle closest-side at 50% 51.7%, transparent 43.4%, #000 43.6%, #000 98%, transparent 99%);
   transform-origin: 50% 51.7%;
-  animation: sway 12s ease-in-out infinite alternate;
+  animation: sway 4.5s ease-in-out infinite alternate;
 }
 .core {
   -webkit-mask-image: url(/brand/sway-sun.webp), radial-gradient(circle closest-side at 50% 51.7%, #000 43.4%, transparent 43.6%);
   mask-image: url(/brand/sway-sun.webp), radial-gradient(circle closest-side at 50% 51.7%, #000 43.4%, transparent 43.6%);
 }
 @keyframes sway {
-  from { transform: rotate(-9deg) scale(0.97); }
-  to { transform: rotate(9deg) scale(1.03); }
+  from { transform: rotate(-16deg) scale(0.94); }
+  to { transform: rotate(16deg) scale(1.06); }
 }
-@media (prefers-reduced-motion: reduce) { .rays { animation: none; } }
+.core { animation: glow 4.5s ease-in-out infinite alternate; }
+@keyframes glow { from { opacity: 0.75; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .rays, .core { animation: none; } }

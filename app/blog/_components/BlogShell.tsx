@@ -6,7 +6,7 @@ export default function BlogShell({ children }: { children: React.ReactNode }) {
   return <div className={styles.shell}>
     <Navbar className={styles.navigation} />
     {children}
-    <footer className={styles.footer}>
+    <footer className={`${styles.footer} sway-pattern`}>
       <span>Spinwellness & Yoga</span>
       <span>Wellbeing for people. Space for connection.</span>
       <Link href="/contact">Contact us</Link>

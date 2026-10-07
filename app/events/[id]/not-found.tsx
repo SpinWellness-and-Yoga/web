@@ -15,7 +15,7 @@ export default function NotFound() {
           <Link 
             href="/events" 
             style={{ 
-              color: '#F16F64', 
+              color: 'var(--color-accent)', 
               textDecoration: 'underline',
               fontSize: '1.1rem',
               fontWeight: '600'

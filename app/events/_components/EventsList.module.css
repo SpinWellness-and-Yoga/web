@@ -51,7 +51,7 @@
 .registerButton {
   display: inline-block;
   padding: 0.75rem 1.5rem;
-  background: #f16f64;
+  background: var(--color-accent);
   color: white;
   border-radius: 25px;
   text-decoration: none;
@@ -60,7 +60,7 @@
 }
 
 .registerButton:hover {
-  background: #e85a50;
+  background: #284a3f;
   transform: scale(1.05);
 }
 

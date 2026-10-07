@@ -23,7 +23,7 @@ export default async function EventFAQPage({ params }: { params: Promise<{ id: s
         <section className={styles.hero}>
           <div className={styles.heroContent}>
             <div className={styles.heroCopy}>
-              <Link href={`/events/${event.id}`} style={{ color: '#F16F64', textDecoration: 'underline', marginBottom: '1rem', display: 'inline-block' }}>
+              <Link href={`/events/${event.id}`} style={{ color: 'var(--color-accent)', textDecoration: 'underline', marginBottom: '1rem', display: 'inline-block' }}>
                 ← back to event details
               </Link>
               <span className={styles.kicker}>frequently asked questions</span>

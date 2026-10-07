@@ -124,7 +124,7 @@ export default function EventsList({ events }: EventsListProps) {
             return (
               <article 
                 key={event.id} 
-                className={eventsStyles.eventCard}
+                className={`${eventsStyles.eventCard} reveal`}
               >
                 <EventImage url={event.image_url} name={capitalizeWords(event.name)} />
                 <h3 className={eventsStyles.eventTitle}>{capitalizeWords(event.name)}</h3>

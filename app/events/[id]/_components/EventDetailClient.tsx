@@ -333,7 +333,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
         alignItems: 'center',
         justifyContent: 'center',
         border: '1px solid rgba(21, 27, 71, 0.12)',
-        background: 'rgba(241, 111, 100, 0.10)',
+        background: 'rgba(51, 92, 78, 0.10)',
         color: '#151B47',
         textDecoration: 'none',
       }}
@@ -356,21 +356,21 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
           width: '100%',
           padding: '3rem 2rem', 
           textAlign: 'center', 
-          background: 'linear-gradient(135deg, #ffffff 0%, #fef9f5 100%)',
+          background: 'linear-gradient(135deg, #ffffff 0%, var(--color-tint) 100%)',
           borderRadius: '20px',
-          boxShadow: '0 8px 24px rgba(241, 111, 100, 0.15)',
-          border: '2px solid #f16f64',
+          boxShadow: '0 8px 24px rgba(51, 92, 78, 0.15)',
+          border: '2px solid var(--color-accent)',
           color: '#151B47'
         }}>
           <div style={{ 
             fontSize: '3rem', 
             marginBottom: '1rem',
-            color: '#f16f64',
+            color: 'var(--color-accent)',
             width: '60px',
             height: '60px',
             margin: '0 auto 1rem',
             borderRadius: '50%',
-            background: 'rgba(241, 111, 100, 0.1)',
+            background: 'rgba(51, 92, 78, 0.1)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -385,7 +385,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
               style={{
                 display: 'inline-block',
                 padding: '0.75rem 2rem',
-                background: '#f16f64',
+                background: 'var(--color-accent)',
                 color: 'white',
                 borderRadius: '25px',
                 fontSize: '1rem',
@@ -403,8 +403,8 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                 display: 'inline-block',
                 padding: '0.75rem 2rem',
                 background: 'transparent',
-                color: '#f16f64',
-                border: '2px solid #f16f64',
+                color: 'var(--color-accent)',
+                border: '2px solid var(--color-accent)',
                 borderRadius: '25px',
                 fontSize: '1rem',
                 fontWeight: '600',
@@ -428,7 +428,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
           <EventImage url={event.image_url} name={capitalizeWords(event.name)} hero />
           <div className={styles.heroContent}>
             <div className={styles.heroCopy}>
-              <Link href="/events" style={{ color: '#F16F64', textDecoration: 'underline', marginBottom: '1rem', display: 'inline-block' }}>
+              <Link href="/events" style={{ color: 'var(--color-accent)', textDecoration: 'underline', marginBottom: '1rem', display: 'inline-block' }}>
                 ← back to events
               </Link>
               <h1 className={styles.heroTitle}>{capitalizeWords(event.name)}</h1>
@@ -446,7 +446,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                           href={mapsUrl} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          style={{ color: '#F16F64', textDecoration: 'underline' }}
+                          style={{ color: 'var(--color-accent)', textDecoration: 'underline' }}
                         >
                           {address}
                         </a>
@@ -524,17 +524,17 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
             </div>
 
             <div style={{ 
-              background: 'linear-gradient(135deg, #ffffff 0%, #fef9f5 100%)', 
+              background: 'linear-gradient(135deg, #ffffff 0%, var(--color-tint) 100%)', 
               borderRadius: '20px', 
               padding: '2rem', 
               boxShadow: '0 4px 20px rgba(21, 27, 71, 0.05)',
-              border: '1px solid rgba(241, 111, 100, 0.1)',
+              border: '1px solid rgba(51, 92, 78, 0.1)',
               opacity: spotsRemaining !== null && spotsRemaining <= 0 ? 0.6 : 1,
             }}>
               <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', color: '#151B47' }}>{capitalizeWords('register')}</h2>
               {spotsRemaining !== null && spotsRemaining <= 0 ? (
                 <>
-                  <p style={{ color: '#f16f64', marginBottom: '1.5rem', lineHeight: '1.6', fontWeight: '600', fontSize: '1.1rem' }}>
+                  <p style={{ color: 'var(--color-accent)', marginBottom: '1.5rem', lineHeight: '1.6', fontWeight: '600', fontSize: '1.1rem' }}>
                     this event is sold out. thank you for your interest!
                   </p>
                   <button
@@ -566,7 +566,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                     style={{
                       width: '100%',
                       padding: '1rem',
-                      background: '#F16F64',
+                      background: 'var(--color-accent)',
                       color: 'white',
                       border: 'none',
                       borderRadius: '25px',
@@ -598,7 +598,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
           overflowY: 'auto',
         }} onClick={() => !submitting && setShowForm(false)}>
           <div style={{
-            background: 'linear-gradient(135deg, #ffffff 0%, #fef9f5 100%)',
+            background: 'linear-gradient(135deg, #ffffff 0%, var(--color-tint) 100%)',
             borderRadius: '20px',
             padding: '2rem',
             maxWidth: '600px',
@@ -660,8 +660,8 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                     boxSizing: 'border-box',
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = '#f16f64';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(241, 111, 100, 0.1)';
+                    e.target.style.borderColor = 'var(--color-accent)';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(51, 92, 78, 0.1)';
                   }}
                   onBlur={(e) => {
                     e.target.style.borderColor = '#DFD9D4';
@@ -689,8 +689,8 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                     boxSizing: 'border-box',
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = '#f16f64';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(241, 111, 100, 0.1)';
+                    e.target.style.borderColor = 'var(--color-accent)';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(51, 92, 78, 0.1)';
                   }}
                   onBlur={(e) => {
                     e.target.style.borderColor = '#DFD9D4';
@@ -725,8 +725,8 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                     boxSizing: 'border-box',
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = '#f16f64';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(241, 111, 100, 0.1)';
+                    e.target.style.borderColor = 'var(--color-accent)';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(51, 92, 78, 0.1)';
                   }}
                   onBlur={(e) => {
                     e.target.style.borderColor = '#DFD9D4';
@@ -751,7 +751,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                   style={{
                     width: '100%',
                     padding: '1rem',
-                    border: validationErrors.phone_number ? '2px solid #f16f64' : '1px solid #DFD9D4',
+                    border: validationErrors.phone_number ? '2px solid var(--color-accent)' : '1px solid #DFD9D4',
                     borderRadius: '8px',
                     fontSize: '1rem',
                     transition: 'all 0.3s ease',
@@ -759,16 +759,16 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                     boxSizing: 'border-box',
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = '#f16f64';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(241, 111, 100, 0.1)';
+                    e.target.style.borderColor = 'var(--color-accent)';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(51, 92, 78, 0.1)';
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = validationErrors.phone_number ? '#f16f64' : '#DFD9D4';
+                    e.target.style.borderColor = validationErrors.phone_number ? 'var(--color-accent)' : '#DFD9D4';
                     e.target.style.boxShadow = 'none';
                   }}
                 />
                 {validationErrors.phone_number && (
-                  <p style={{ color: '#f16f64', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                  <p style={{ color: 'var(--color-accent)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
                     {validationErrors.phone_number}
                   </p>
                 )}
@@ -786,7 +786,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                   style={{
                     width: '100%',
                     padding: '1rem',
-                    border: validationErrors.email ? '2px solid #f16f64' : '1px solid #DFD9D4',
+                    border: validationErrors.email ? '2px solid var(--color-accent)' : '1px solid #DFD9D4',
                     borderRadius: '8px',
                     fontSize: '1rem',
                     transition: 'all 0.3s ease',
@@ -794,16 +794,16 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                     boxSizing: 'border-box',
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = '#f16f64';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(241, 111, 100, 0.1)';
+                    e.target.style.borderColor = 'var(--color-accent)';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(51, 92, 78, 0.1)';
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = validationErrors.email ? '#f16f64' : '#DFD9D4';
+                    e.target.style.borderColor = validationErrors.email ? 'var(--color-accent)' : '#DFD9D4';
                     e.target.style.boxShadow = 'none';
                   }}
                 />
                 {validationErrors.email && (
-                  <p style={{ color: '#f16f64', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                  <p style={{ color: 'var(--color-accent)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
                     {validationErrors.email}
                   </p>
                 )}
@@ -859,7 +859,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                   style={{
                     width: '100%',
                     padding: '1rem',
-                    border: validationErrors.notes ? '2px solid #f16f64' : '1px solid #DFD9D4',
+                    border: validationErrors.notes ? '2px solid var(--color-accent)' : '1px solid #DFD9D4',
                     borderRadius: '8px',
                     fontSize: '1rem',
                     fontFamily: 'inherit',
@@ -869,17 +869,17 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                     resize: 'vertical',
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = '#f16f64';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(241, 111, 100, 0.1)';
+                    e.target.style.borderColor = 'var(--color-accent)';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(51, 92, 78, 0.1)';
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = validationErrors.notes ? '#f16f64' : '#DFD9D4';
+                    e.target.style.borderColor = validationErrors.notes ? 'var(--color-accent)' : '#DFD9D4';
                     e.target.style.boxShadow = 'none';
                   }}
                 />
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem' }}>
                   {validationErrors.notes && (
-                    <p style={{ color: '#f16f64', fontSize: '0.875rem', margin: 0 }}>
+                    <p style={{ color: 'var(--color-accent)', fontSize: '0.875rem', margin: 0 }}>
                       {validationErrors.notes}
                     </p>
                   )}
@@ -904,25 +904,25 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                   />
                   <span style={{ fontSize: '0.95rem', lineHeight: 1.4 }}>
                     i agree to the{' '}
-                    <Link href="/terms" target="_blank" style={{ color: '#F16F64', textDecoration: 'underline' }}>
+                    <Link href="/terms" target="_blank" style={{ color: 'var(--color-accent)', textDecoration: 'underline' }}>
                       terms, yoga & fitness waiver, and media release
                     </Link>
                     .
                   </span>
                 </label>
                 {validationErrors.terms && (
-                  <p style={{ color: '#f16f64', fontSize: '0.875rem', marginTop: '0.5rem' }}>{validationErrors.terms}</p>
+                  <p style={{ color: 'var(--color-accent)', fontSize: '0.875rem', marginTop: '0.5rem' }}>{validationErrors.terms}</p>
                 )}
               </div>
 
               {submitError && (
                 <div style={{ 
                   padding: '1rem 1.25rem', 
-                  background: 'linear-gradient(135deg, #f16f64 0%, #e85a50 100%)', 
+                  background: 'linear-gradient(135deg, var(--color-accent) 0%, #284a3f 100%)', 
                   color: 'white', 
                   borderRadius: '12px', 
                   marginBottom: '1.5rem',
-                  boxShadow: '0 4px 12px rgba(241, 111, 100, 0.3)',
+                  boxShadow: '0 4px 12px rgba(51, 92, 78, 0.3)',
                   border: '1px solid rgba(255, 255, 255, 0.2)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -938,7 +938,7 @@ export default function EventDetailClient({ event, eventId }: EventDetailClientP
                 style={{
                   width: '100%',
                   padding: '1rem',
-                  background: submitting ? '#DFD9D4' : '#F16F64',
+                  background: submitting ? '#DFD9D4' : 'var(--color-accent)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '25px',

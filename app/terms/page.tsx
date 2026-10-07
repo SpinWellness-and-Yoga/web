@@ -53,7 +53,7 @@ export default function TermsPage() {
         </ul>
 
         <div style={{ marginTop: '2.5rem' }}>
-          <Link href="/events" style={{ color: '#F16F64', textDecoration: 'underline' }}>
+          <Link href="/events" style={{ color: 'var(--color-accent)', textDecoration: 'underline' }}>
             back to events
           </Link>
         </div>

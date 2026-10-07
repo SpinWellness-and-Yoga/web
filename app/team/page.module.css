@@ -1,5 +1,5 @@
 .shell {
-  background: linear-gradient(180deg, var(--color-ivory) 0%, #f8f1ea 100%);
+  background: linear-gradient(180deg, var(--color-ivory) 0%, var(--color-ivory) 100%);
   min-height: 100vh;
   color: var(--color-midnight);
   padding-top: 0;
@@ -71,7 +71,7 @@
 .teamCard:hover {
   transform: translateY(-8px) scale(1.02);
   box-shadow: 0 16px 48px rgba(21, 27, 71, 0.12);
-  border-color: rgba(241, 111, 100, 0.2);
+  border-color: rgba(51, 92, 78, 0.2);
 }
 
 .cardContent {
@@ -89,7 +89,7 @@
   flex: 1;
   min-height: 400px;
   overflow: hidden;
-  background: #f8f1ea;
+  background: var(--color-ivory);
 }
 
 .teamImage {
@@ -107,7 +107,7 @@
   width: 100%;
   flex: 1;
   min-height: 400px;
-  background: linear-gradient(135deg, var(--color-coral) 0%, #ff8e7a 100%);
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-soft) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -161,7 +161,7 @@
   right: 0;
   padding: 2rem 1.75rem;
   background: linear-gradient(to top, rgba(21, 27, 71, 0.98) 0%, rgba(21, 27, 71, 0.95) 70%, transparent 100%);
-  color: var(--color-coral);
+  color: var(--color-accent);
   transform: translateY(100%);
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 3;
@@ -177,7 +177,7 @@
   margin: 0;
   font-size: 0.95rem;
   line-height: 1.6;
-  color: var(--color-coral);
+  color: var(--color-accent);
 }
 
 .footer {

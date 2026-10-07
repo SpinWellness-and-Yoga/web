@@ -1,3 +1,4 @@
+import SwaySun from '../_components/SwaySun';
 
 import Image from 'next/image';
 import { readSiteContent } from '@/lib/site-content';
@@ -15,6 +16,7 @@ export default async function TeamPage() {
       <main className={styles.main}>
         <section className={styles.teamSection}>
           <header className={styles.sectionHeader}>
+            <SwaySun className="sway-heading-sun" />
             <span className={styles.sectionKicker}>our team</span>
             <h1>Meet the SpinWellness & Yoga Team</h1>
             <p>

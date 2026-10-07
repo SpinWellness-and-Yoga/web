@@ -53,7 +53,7 @@ function CancelTicketContent() {
         <Navbar />
         <main className={styles.main} style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ maxWidth: '600px', textAlign: 'center', padding: '3rem 2rem' }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem', color: '#f16f64' }}>✓</div>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem', color: 'var(--color-accent)' }}>✓</div>
             <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#151B47' }}>ticket cancelled</h1>
             <p style={{ fontSize: '1.1rem', color: '#322216', marginBottom: '2rem', lineHeight: '1.6' }}>
               your ticket has been successfully cancelled. the spot is now available for someone else.
@@ -62,7 +62,7 @@ function CancelTicketContent() {
               onClick={() => router.push('/events')}
               style={{
                 padding: '1rem 2rem',
-                background: '#f16f64',
+                background: 'var(--color-accent)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '25px',
@@ -131,7 +131,7 @@ function CancelTicketContent() {
               style={{
                 width: '100%',
                 padding: '1rem',
-                background: loading || !ticketNumber.trim() ? '#DFD9D4' : '#f16f64',
+                background: loading || !ticketNumber.trim() ? '#DFD9D4' : 'var(--color-accent)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '25px',
@@ -146,7 +146,7 @@ function CancelTicketContent() {
 
           <p style={{ marginTop: '2rem', fontSize: '0.9rem', color: '#666', textAlign: 'center' }}>
             need help? contact us at{' '}
-            <a href="mailto:admin@spinwellnessandyoga.com" style={{ color: '#f16f64', textDecoration: 'underline' }}>
+            <a href="mailto:admin@spinwellnessandyoga.com" style={{ color: 'var(--color-accent)', textDecoration: 'underline' }}>
               admin@spinwellnessandyoga.com
             </a>
           </p>
