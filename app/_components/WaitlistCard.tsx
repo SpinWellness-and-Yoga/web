@@ -55,7 +55,7 @@ export default function WaitlistCard() {
       setFormData(initialState);
     } catch {
       setStatus("error");
-      setFeedback("Something went wrong. Please try again or email hello@spinwellness.com.");
+      setFeedback("Something went wrong. Please try again or email admin@spinwellnessandyoga.com.");
     }
   };
 

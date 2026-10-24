@@ -16,7 +16,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.CMS_SITE_URL || "https://spinwellness.org"),
+  metadataBase: new URL(process.env.CMS_SITE_URL || "https://spinwellnessandyoga.com"),
   title: "Spinwellness & Yoga | Employee Wellness, Therapy, and Culture Design",
   description:
     "Spinwellness & Yoga delivers tailored employee wellness programs, immersive therapy support, and on-demand resources designed to elevate team wellbeing.",
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     description:
       "Join the Spinwellness & Yoga waitlist and be first to access bespoke wellness programs, therapy sessions, and 24/7 resources.",
     type: "website",
-    url: "https://spinwellness.org",
+    url: "https://spinwellnessandyoga.com",
   },
   twitter: {
     card: "summary_large_image",
